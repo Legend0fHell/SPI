@@ -3,9 +3,9 @@
 This script **optimizes your connection** by lots of **verified methods.**
 
 ## NOTE
-I'm currently needing **your help**. If you got any suggestion about the script, like the tweaks or the script code itself, **issue** or **make a pull request.**
+* I'm currently needing **your help**. If you got any suggestion about the script, like the tweaks or the script code itself, **issue** or **make a pull request.**
 
-**THIS SCRIPT WILL NOT REVERSE CHANGES. Use the script at your OWN RISKS.**
+* **THIS SCRIPT WILL NOT REVERSE CHANGES. Use the script at your OWN RISKS.**
 
 ## Getting Started
 
