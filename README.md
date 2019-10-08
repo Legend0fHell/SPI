@@ -25,14 +25,22 @@ One-press optimization. Open by **the given shortcut** for it to work.
 * [Notepad++] (https://notepad-plus-plus.org/) - The source code editor.
 * [PowerCmd] (https://www.powercmd.com/) - The command prompt replacement.
 
-
 ## Authors
 
 * **Pham Nhat Quang** - *Main author* - [Legend0fHell](https://github.com/Legend0fHell/)
 
+## Special Thanks:
+
+* **Nguyen Ba Hung** - *Tester*
+* **Tron** - *Tweaks related to Telemetry removal, and my inspiration* - [r/TronScript](https://www.reddit.com/r/TronScript/)
+* **SpeedyFox** - *Optimize browsers* - [SpeedyFox](https://www.crystalidea.com/speedyfox/)
+* **Everyone in StackOverflow and SuperUser** - *Help me with coding*
+
 ## License
 
-This project is licensed under the **BSD-3 Clause License** - see the [LICENSE.md](LICENSE.md) file for details.
+* This project is licensed under the **BSD-3 Clause License** - see the [LICENSE.md](LICENSE.md) file for details.
+* All 3rd-party tools SPI uses are bound by their respective licenses.
+* It is YOUR responsibility to determine if you can use them in your specific situation.
 
 ## Acknowledgments
 
