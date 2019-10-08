@@ -38,9 +38,9 @@
 	@echo off
 	CHCP 1258 >nul 2>&1
 	CHCP 65001 >nul 2>&1
-	setLocal EnableExtensions EnableDelayedExpansion
-	set ver=4.1b1
-	set verdate=Oct 06 2019
+	setlocal EnableExtensions EnableDelayedExpansion
+	set ver=4.1.0
+	set verdate=Oct 08 2019
 	color 0e
 :: /************************************************************************************/
 
@@ -64,12 +64,15 @@
 :: Check if the config files is valid.
 :: /************************************************************************************/
 :config.checkVaild
+	:: Create a referrence version file to validate the config file.
 	(
 		echo # Setting the config wrong can cause the script to crash. Do not change configVersion.
 		echo # If the script crash, try deleting this config file.
 		echo configVersion=!ver!-!verdate!
 	) >"%temp%\ver.txt"
 	set configDir=%~dp0config.txt
+	:: Check the existance of the config file. Compare with the referrence file.
+	:: If the config file is found and valid go to set the config else recreate it.
 	if exist !configDir! (
 		set existConfig=1
 		echo N | comp /n=3 "!temp!\ver.txt" "!configDir!" | findstr /i "OK" && call :config.set
@@ -117,6 +120,7 @@
 :: Check if users run the Script via the given Shortcut.
 :: /************************************************************************************/
 :main.checkShortcut
+	:: Find the argument "1" when opening the file. This is to check if the script was run by the given shortcut.
 	echo %1 | findstr "1" >nul
 	if %errorlevel%==1 (
 		cls
@@ -130,6 +134,7 @@
 		pause >nul
 		exit
 	)
+	:: Checking things.
 	call :main.preloadPS
 	if %lang%==1 (echo  Đang chạy trước PowerShell...) else (echo  Preloading PowerShell...)
 	if %lang%==1 (echo  Đang kiểm tra kết nối mạng...) else (echo  Checking the Internet connection...)
@@ -216,6 +221,7 @@ goto :EOF
 		echo # To add your custom addresses, you must allow customHosts by the above settings.
 		echo.
 	) >config.txt
+	:: Set the default addresses in the config file. If customHosts is 1, it will skip setting the default addresses.
 	if %customHosts%==1 (
 		type %temp%\customHosts.txt >>config.txt
 	) else (
@@ -592,6 +598,7 @@ goto :EOF
 		echo  Sử dụng công cụ này sẽ ngắt kết nối Internet của bạn trong thời gian rất ngắn.
 		echo  CÔNG CỤ KHÔNG ĐẢO NGƯỢC NHỮNG THAY ĐỔI. Bạn CHỊU TRÁCH NHIỆM khi dùng công cụ.
 	)
+	:: Echo this if showInfo is 1.
 	if %showInfo%==1 (
 		echo.
 		if !lang!==0 (
@@ -717,6 +724,7 @@ goto :EOF
 		if !lang!==0 (echo  Estimated Time: ~15 seconds.) else (echo  Thời gian dự tính: ~15 giây.)
 		echo.
 		set timerStart=!time!
+		:: Find the Public IP by nslookup the following site.
 		for /f "skip=1 tokens=2 delims=: " %%G in ('nslookup myip.opendns.com. resolver1.opendns.com ^| findstr /C:"Address"') do (
 			set PubIP=%%G
 		)
@@ -751,6 +759,7 @@ goto :EOF
 		if !lang!==0 (echo  Estimated Time: ~30 seconds.) else (echo  Thời gian dự tính: ~30 giây.)
 		echo.
 		set timerStart=!time!
+		:: nslookup the given website/IP.
 		nslookup !input! | findstr /c:"Addresses" >nul
 		if %errorlevel%==0 (
 			for /f "tokens=2 delims= " %%G in ('nslookup !input! ^| findstr /c:"Addresses"') do (
@@ -774,11 +783,13 @@ goto :EOF
 			echo.
 			echo  Vị trí đã được gửi sang trình duyệt mặc định của bạn.
 		)
+		:: Query the IP in traceip.net
 		start www.traceip.net/?query=!IP!
 	) else if !addOpt!==3 (
 		if !lang!==0 (echo  Estimated Time: ~15 seconds.) else (echo  Thời gian dự tính: ~15 giây.)
 		echo.
 		set timerStart=!time!
+		:: Execute the following command then search for Key Content.
 		for /f "tokens=2 delims=:" %%G in ('netsh wlan show profile') do (
 			for /f "tokens=* delims= " %%H in ("%%G") do (
 				for /f "tokens=2 delims=:" %%a in ('netsh wlan show profile "%%H" key^=clear ^| findstr /C:"Key Content"') do (
@@ -799,6 +810,7 @@ goto :EOF
 		if !lang!==0 (echo  Estimated Time: ~5 seconds.) else (echo  Thời gian dự tính: ~5 giây.)
 		echo.
 		set timerStart=!time!
+		:: Execute the following command then output it to a .txt file in output\
 		netsh advfirewall firewall show rule name^=all >output\firewallRules.txt
 		set timerEnd=!time!
 		call :main.timer
@@ -814,6 +826,7 @@ goto :EOF
 		echo.
 		set timerStart=!time!
 		if exist activeIP.txt del /f /q activeIP.txt
+		:: Execute the following command then output it to a .txt file in output\
 		FOR /L %%i IN (1,1,254) DO ping -n 1 192.168.1.%%i | findstr /C:"Destination" /V | findstr /C:"Reply" >>output\activeIP.txt
 		set timerEnd=!time!
 		call :main.timer
@@ -848,6 +861,7 @@ goto :EOF
 			echo  Thời gian dự tính: ~!estPing! giây.
 		)
 		set timerStart=!time!
+		:: ping the given website/IP with the user given number of ping requests.
 		ping -!pingOption! !pingWeb!
 		set timerEnd=!time!
 		call :main.timer
@@ -865,6 +879,7 @@ goto :EOF
 		echo.
 		if !lang!==0 (echo  Estimated Time: ~2 minutes.) else (echo  Thời gian dự tính: ~2 phút.)
 		set timerStart=!time!
+		:: tracert the given website/IP.
 		tracert !tracertWeb!
 		set timerEnd=!time!
 		call :main.timer
@@ -882,6 +897,7 @@ goto :EOF
 		echo.
 		if !lang!==0 (echo  Estimated Time: ~2 minutes.) else (echo  Thời gian dự tính: ~2 phút.)
 		set timerStart=!time!
+		:: pathping the given website/IP.
 		pathping !tracertWeb!
 		set timerEnd=!time!
 		call :main.timer
@@ -898,6 +914,7 @@ goto :EOF
 		if !lang!==1 (echo  Estimated Time: ~10 seconds.) else (echo  Thời gian dự tính: ~10 giây.)
 		echo.
 		set timerStart=!time!
+		:: Basically adding 1 to the %lang% variable then restart the script by the shortcut in tools\
 		set langTemp=!lang!
 		set /a lang+=1
 		if !lang!==2 set lang=0
@@ -923,6 +940,7 @@ goto :EOF
 		if !lang!==0 (echo  Estimated Time: ~10 seconds.) else (echo  Thời gian dự tính: ~10 giây.)
 		echo.
 		set timerStart=!time!
+		:: Delete the config file to reset the configurations.
 		set langTemp=!lang!
 		del /f /q config.txt
 		set timerEnd=!time!
@@ -1010,6 +1028,7 @@ goto :EOF
 :progress.checkLatency1
 	if !lang!==0 (call :main.showProgress "Checking the Latency" 1 1) else (call :main.showProgress "Kiểm tra Độ trễ" 1 1)
 	if %checkPingEnable%==0 goto progress.TCPIP
+	:: Prevent the command from errors.
 	if %internetStatus%==0 (
 		set failedPingCheck=1
 		goto progress.TCPIP
@@ -1026,146 +1045,252 @@ goto :EOF
 :: Run TCP/IP/DNS tweaks.
 :: /************************************************************************************/
 :progress.TCPIP
+	:: Reset WinSock
 	call :main.showProgress "WinSockReset" 1 2
-	netsh winsock reset
+		netsh winsock reset
+		
+	:: Reset the Log file in 2 directories.
 	call :main.showProgress "Reset Log" 1 2
-	netsh int ip reset %HomeDrive%\resetlog.txt
-	netsh int ip reset reset.log
+		netsh int ip reset %HomeDrive%\resetlog.txt
+		netsh int ip reset reset.log
+		
+	:: Flush the DNS Cache.
 	call :main.showProgress "DNS Cache" 1 2
-	ipconfig /flushdns
+		ipconfig /flushdns
+		
+	:: Release the IP.
 	call :main.showProgress "Release IP" 1 2
-	ipconfig /release
+		ipconfig /release
+		
+	:: Renew the IP. Multi-tasking this progress because this takes a lot of time.
 	call :main.showProgress "Renew IP" 1 2
-	start "SPI | %percent%%% %now%/%end% - Renew IP [!splitTitle!]" /MIN cmd /c ipconfig /renew"
+		start "SPI | %percent%%% %now%/%end% - Renew IP [!splitTitle!]" /MIN cmd /c ipconfig /renew"
+		
+	:: Delete the ARP Cache
 	call :main.showProgress "ARP Cache" 1 2
-	netsh interface ip delete arpcache
+		netsh interface ip delete arpcache
+		
+	:: Disable Receive Segment Coalescing.
 	call :main.showProgress "Receive Segment Coalescing" 1 2
-	netsh int tcp set global rsc=disabled >nul
-	powershell -Command "& {Set-NetOffloadGlobalSetting -ReceiveSegmentCoalescing disabled;}"
+		netsh int tcp set global rsc=disabled >nul
+		powershell -Command "& {Set-NetOffloadGlobalSetting -ReceiveSegmentCoalescing disabled;}"
+		
+	:: Disable Packet Coalescing.
 	call :main.showProgress "Packet Coalescing" 1 2
-	powershell -Command "& {Set-NetOffloadGlobalSetting -PacketCoalescingFilter disabled;}"
+		powershell -Command "& {Set-NetOffloadGlobalSetting -PacketCoalescingFilter disabled;}"
+		
+	:: Enable Checksum Offload.
 	call :main.showProgress "Checksum Offload" 1 2
-	powershell -Command "& {Enable-NetAdapterChecksumOffload -Name *;}"
+		powershell -Command "& {Enable-NetAdapterChecksumOffload -Name *;}"
+		
+	:: Disable Large Send Offload.
 	call :main.showProgress "Large Send Offload" 1 2
-	powershell -Command "& {Disable-NetAdapterLso -Name *;}"
+		powershell -Command "& {Disable-NetAdapterLso -Name *;}"
+		
+	:: Disable RFC 1323 Timestamps.
 	call :main.showProgress "RFC 1323 Timestamps" 1 2
-	netsh int tcp set global timestamps=disabled
+		netsh int tcp set global timestamps=disabled
+		
+	:: Set the Initial RTO to 2500.
 	call :main.showProgress "Initial RTO" 1 2
-	netsh int tcp set global initialRto=2500 >nul
+		netsh int tcp set global initialRto=2500 >nul
+		
+	:: Set the Min RTO to 300.
 	call :main.showProgress "Min RTO" 1 2
-	powershell -Command "& {set-NetTCPSetting -SettingName InternetCustom -MinRto 300;}"
+		powershell -Command "& {set-NetTCPSetting -SettingName InternetCustom -MinRto 300;}"
+		
+	:: Set the Add-On Congestion Control Provider to CTCP by 3 methods.
 	call :main.showProgress "Add-On Congestion Control Provider" 1 2
-	netsh int tcp set global congestionprovider=ctcp
-	powershell -Command "& {Set-NetTCPSetting -SettingName InternetCustom -CongestionProvider CTCP;}"
-	netsh int tcp set supplemental custom congestionprovider=ctcp
+		netsh int tcp set global congestionprovider=ctcp
+		powershell -Command "& {Set-NetTCPSetting -SettingName InternetCustom -CongestionProvider CTCP;}"
+		netsh int tcp set supplemental custom congestionprovider=ctcp
+		
+	:: Enable ECN.
 	call :main.showProgress "ECN" 1 2
-	netsh int tcp set global ecn=enabled
+		netsh int tcp set global ecn=enabled
+		
+	:: Disable Scaling Heuristics to prevent it from changing the Window Auto-Tuning Level.
 	call :main.showProgress "Scaling Heuristics" 1 2
-	netsh int tcp set heuristics disabled
+		netsh int tcp set heuristics disabled
+		
+	:: Set Window Auto-Tuning Level to Normal.
 	call :main.showProgress "Window Auto-Tuning Level" 1 2
-	netsh int tcp set global autotuninglevel=normal
+		netsh int tcp set global autotuninglevel=normal
+		
+	:: Disable TCP Chimney Offload.
 	call :main.showProgress "TCP Chimney Offload" 1 2
-	netsh int tcp set global chimney=disabled
+		netsh int tcp set global chimney=disabled
+	
+	:: Enable RSS or Receive-Side Scaling State.
 	call :main.showProgress "Receive-Side Scaling State" 1 2
-	netsh int tcp set global rss=enabled
-	netsh interface tcp set heuristics wsh=enabled
+		netsh int tcp set global rss=enabled
+		netsh interface tcp set heuristics wsh=enabled
+		
+	:: Enable Direct Cache Access.
 	call :main.showProgress "Direct Cache Access" 1 2
-	netsh int tcp set global dca=enabled
+		netsh int tcp set global dca=enabled
+		
+	:: Enable Non Sack RTT Resiliency.
 	call :main.showProgress "Non Sack RTT Resiliency" 1 2
-	netsh int tcp set global nonsackrttresiliency=enabled >nul
+		netsh int tcp set global nonsackrttresiliency=enabled >nul
+	
+	:: Set Max SYN Retransmissions to 2.
 	call :main.showProgress "Max SYN Retransmissions" 1 2
-	netsh int tsp set global maxsynretransmissions=2 >nul
+		netsh int tsp set global maxsynretransmissions=2 >nul
+		
+	:: Set Initial Congestion Window to 10.
 	call :main.showProgress "Initial Congestion Window" 1 2
-	powershell -Command "& {Set-NetTCPSetting -SettingName InternetCustom -InitialCongestionWindow 10;}"
-	netsh int tcp set supplemental template=custom icw=10
+		powershell -Command "& {Set-NetTCPSetting -SettingName InternetCustom -InitialCongestionWindow 10;}"
+		netsh int tcp set supplemental template=custom icw=10
+		
+	:: Disable Network Direct Memory Access.
 	call :main.showProgress "Network Direct Memory Access" 1 2
-	netsh interface tcp set global netdma=disabled
+		netsh interface tcp set global netdma=disabled
+		
+	:: Disable Memory Pressure Protection.
 	call :main.showProgress "Memory Pressure Protection" 1 2
-	netsh int tcp set security mpp=disabled
-	netsh int tcp set security profiles=disabled
+		netsh int tcp set security mpp=disabled
+		netsh int tcp set security profiles=disabled
+		
+	:: Enable Auto-Tuning.
 	call :main.showProgress "Auto-Tuning" 1 2
-	netsh winsock set autotuning on
+		netsh winsock set autotuning on
+		
+	:: Set Maximum Transmission Unit to 1492. This has to be done on every interfaces.
 	call :main.showProgress "Maximum Transmission Unit" 1 2
-	set checkInterfaceMode=1
-	call :progress.getInterfaceName
+		set checkInterfaceMode=1
+		call :progress.getInterfaceName
+		
+	:: Set DefaultTTL to 64.
 	call :main.showProgress "DefaultTTL" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v DefaultTTL /t REG_DWORD /d "64" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v DefaultTTL /t REG_DWORD /d "64" /f > NUL 2>&1
+		
+	:: Set MaxUserPort to 65534.
 	call :main.showProgress "MaxUserPort" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v MaxUserPort /t REG_DWORD /d "65534" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v MaxUserPort /t REG_DWORD /d "65534" /f > NUL 2>&1
+		
+	:: Set TCPTimedWaitDelay to 30.
 	call :main.showProgress "TCPTimedWaitDelay" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v TcpTimedWaitDelay /t REG_DWORD /d "30" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v TcpTimedWaitDelay /t REG_DWORD /d "30" /f > NUL 2>&1
+		
+	:: Set Host Resolution Priorities.
 	call :main.showProgress "Host Resolution Priority" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v LocalPriority /t REG_DWORD /d "4" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v HostPriority /t REG_DWORD /d "5" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v DnsPriority /t REG_DWORD /d "6" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v NetbtPriority /t REG_DWORD /d "7" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v LocalPriority /t REG_DWORD /d "4" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v HostPriority /t REG_DWORD /d "5" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v DnsPriority /t REG_DWORD /d "6" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider" /v NetbtPriority /t REG_DWORD /d "7" /f > NUL 2>&1
+		
+	:: Set QoS Reserved Bandwidth to 0 [In reality it's 10 due to Microsoft doesn't allow it].
 	call :main.showProgress "QoS Reserved Bandwidth" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Psched" /v NonBestEffortLimit /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Psched" /v NonBestEffortLimit /t REG_DWORD /d "0" /f > NUL 2>&1
+		
+	:: Disable QoS Policy NLA.
 	call :main.showProgress "QoS Policy NLA" 1 2
-	reg add "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Tcpip\QoS" /v "Do not use NLA" /t REG_SZ /d "1" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Tcpip\QoS" /v "Do not use NLA" /t REG_SZ /d "1" /f > NUL 2>&1
+		
+	:: Set Network Memory Allocation.
 	call :main.showProgress "Network Memory Allocation" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v LargeSystemCache /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v Size /t REG_DWORD /d "3" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v LargeSystemCache /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v Size /t REG_DWORD /d "3" /f > NUL 2>&1
+		
+	:: Set Network Throttling Index to 4294967295 [2*2^31-1].
 	call :main.showProgress "Network Throttling Index" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d "4294967295" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d "4294967295" /f > NUL 2>&1
+		
+	:: Set SystemResponsiveness to 0 [This is a network tweak].
 	call :main.showProgress "System Responsiveness" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v SystemResponsiveness /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v SystemResponsiveness /t REG_DWORD /d "0" /f > NUL 2>&1
+	
+	:: Disable Scaling Heuristics in registry.
 	call :main.showProgress "Scaling Heuristics Registry" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableHeuristics" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableWsd" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableHeuristics" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableWsd" /t REG_DWORD /d "0" /f > NUL 2>&1
+		
+	:: Enable RFC 1323 Window Scaling.
 	call :main.showProgress "RFC 1323 Window Scaling" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "Tcp1323Opts" /t REG_DWORD /d "1" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "Tcp1323Opts" /t REG_DWORD /d "1" /f > NUL 2>&1
+		
+	:: Set UDP Packet Size to 1280.
 	call :main.showProgress "UDP Packet Size" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v "MaximumUdpPacketSize" /t REG_DWORD /d "1280" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v "MaximumUdpPacketSize" /t REG_DWORD /d "1280" /f > NUL 2>&1
+		
+	:: Set options in DNS Error Caching.
 	call :main.showProgress "DNS Error Caching" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" /v "NegativeCacheTime" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" /v "NetFailureCacheTime" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" /v "NegativeSOACacheTime" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" /v "NegativeCacheTime" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" /v "NetFailureCacheTime" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" /v "NegativeSOACacheTime" /t REG_DWORD /d "0" /f > NUL 2>&1
+		
+	:: Set options in MMCSS.
 	call :main.showProgress "MMCSS" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Affinity" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Background Only" /t REG_SZ /d "False" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Clock Rate" /t REG_DWORD /d "2710" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d "8" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Priority" /t REG_DWORD /d "6" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "SFIO Priority" /t REG_SZ /d "High" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Affinity" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Background Only" /t REG_SZ /d "False" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Clock Rate" /t REG_DWORD /d "2710" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d "8" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Priority" /t REG_DWORD /d "6" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "SFIO Priority" /t REG_SZ /d "High" /f > NUL 2>&1
+		
+	:: Set Nagle's Algorithms. This has to be done on every interfaces.
 	call :main.showProgress "Nagle's Algorithms" 1 2
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\MSMQ\Parameters" /v TCPNoDelay /t REG_DWORD /d "1" /f > NUL 2>&1
-	for /f "tokens=2* delims=_" %%H in ('getmac.exe') do (call :progress.setNagle %%H)
-	for /F "delims=" %%I in ('%SystemRoot%\System32\reg.exe query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}" /s /v ProviderName 2^>nul') do call :progress.setAdapters "%%I"
-	set noPhaseChanged=0
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\MSMQ\Parameters" /v TCPNoDelay /t REG_DWORD /d "1" /f > NUL 2>&1
+		for /f "tokens=2* delims=_" %%H in ('getmac.exe') do (call :progress.setNagle %%H)
+		
+	:: Gettings every Device Number ID in the Registry to set the Network Adapters settings.
+		for /F "delims=" %%I in ('%SystemRoot%\System32\reg.exe query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}" /s /v ProviderName 2^>nul') do call :progress.setAdapters "%%I"
+		set noPhaseChanged=0
 	goto progress.browsers
 :: /************************************************************************************/
 
 
-:: Tweaking the adapters settings.
+:: Tweaking the adapters settings. These have to be done on every adapters.
 :: /************************************************************************************/
 :progress.setAdapters
+	:: Processing the informations got from the above commands.
 	set "RegistryLine=%~1"
 	if "%RegistryLine:~0,5%" == "HKEY_" set "RegistryKey=%~1" & goto :EOF
 	for /F "tokens=2*" %%A in ("%RegistryLine%") do set "ProviderName=%%B"
+	:: Skip the finding results those contain Microsoft or "search".
 	echo %ProviderName% | findstr "search"
 	if %errorlevel%==1 (
 		if "%ProviderName%" == "Microsoft" goto :EOF
+		:: Disable Flow Control.
 		call :main.showProgress "Flow Control" 1 7
-		reg add "%RegistryKey%" /v "*FlowControl" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "*FlowControl" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Disable Interrupt Moderation.
 		call :main.showProgress "Interrupt Moderation" 1 7
-		reg add "%RegistryKey%" /v "*InterruptModeration" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "*InterruptModeration" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Disable Speed Duplex.
 		call :main.showProgress "Speed Duplex" 1 7
-		reg add "%RegistryKey%" /v "*SpeedDuplex" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "*SpeedDuplex" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Disable Auto Disable Gigabit.
 		call :main.showProgress "Auto Disable Gigabit" 1 7
-		reg add "%RegistryKey%" /v "AutoDisableGigabit" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "AutoDisableGigabit" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Disable Energy Efficient Ethernet.
 		call :main.showProgress "Energy Efficient Ethernet" 1 7
-		reg add "%RegistryKey%" /v "EEE" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "EEE" /t REG_SZ /d "0" /f >NUL 2>&1
+		
+		:: Disable Priority and VLAN.
 		call :main.showProgress "Priority and VLAN" 1 7
-		reg add "%RegistryKey%" /v "*PriorityVLANTag" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "*PriorityVLANTag" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Disable Green Ethernet.
 		call :main.showProgress "Green Ethernet" 1 7
-		reg add "%RegistryKey%" /v "EnableGreenEthernet" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "EnableGreenEthernet" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Disable Large Send Offload.
 		call :main.showProgress "Large Send Offload v2" 1 7
-		reg add "%RegistryKey%" /v "*LsoV2IPv4" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "*LsoV2IPv4" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Set AP Compatibility Mode to Higher Performance.
 		call :main.showProgress "AP Compatibility Mode" 1 7
-		reg add "%RegistryKey%" /v "ApCompatMode" /t REG_SZ /d "0" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "ApCompatMode" /t REG_SZ /d "0" /f >NUL 2>&1
+			
+		:: Disable "Allow the computer to turn off this device to save power" option in the Power Management tabs in Device Manager.
 		call :main.showProgress "Permit turning off the adapters" 1 7
-		reg add "%RegistryKey%" /v "PnPCapabilities" /t REG_DWORD /d "24" /f >NUL 2>&1
+			reg add "%RegistryKey%" /v "PnPCapabilities" /t REG_DWORD /d "24" /f >NUL 2>&1
 	)
 	set noPhaseChanged=2
 goto :EOF
@@ -1215,6 +1340,7 @@ goto :EOF
 		call :main.showProgress "Chạy SpeedyFox - Công cụ tối ưu an toàn" 1 3
 	)
 	start "SPI | %percent%%% %now%/%end% - SpeedyFox [!splitTitle!]" /MIN cmd /c %~dp0tools\speedyfox.exe "/Chrome:all" "/Firefox:all" "/Opera:all"
+	:: Deleting Chrome caches.
 	for /d %%b in (%SystemDrive%\Users\*) do del /Q "%%b\AppData\Local\Google\User Data\Default\cache\*"
 goto :EOF
 :: /************************************************************************************/
@@ -1223,37 +1349,44 @@ goto :EOF
 :: Run browsers tweaks.
 :: /************************************************************************************/
 :progress.browsers
+	:: Tweaking Internet Explorer options [Someone in the world is still using this].
 	call :main.showProgress "Internet Explorer Tweaks" 1 3
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER" /v explorer.exe /t REG_DWORD /d "8" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER" /v explorer.exe /t REG_DWORD /d "8" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER" /v iexplore.exe /t REG_DWORD /d "8" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER" /v iexplore.exe /t REG_DWORD /d "8" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN" /V DNSPreresolution /t REG_DWORD /d "8" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN" /V Use_Async_DNS /t REG_SZ /d "yes" /f > NUL 2>&1
-	reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /V DnsCacheEnabled /t REG_DWORD /d "1" /f > NUL 2>&1
-	reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /V DnsCacheEntries /t REG_DWORD /d "200" /f > NUL 2>&1
-	reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /V DnsCacheTimeout /t REG_DWORD /d "15180" /f > NUL 2>&1
-	reg add "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\Main" /V EnablePreBinding /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext" /V DisableAddonLoadTimePerformanceNotifications /t REG_DWORD /d "1" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext" /V NoFirsttimeprompt /t REG_DWORD /d "1" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V DisableInPrivateBlocking /t REG_DWORD /d "00000000" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V StartMode /t REG_DWORD /d "00000001" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER" /v explorer.exe /t REG_DWORD /d "8" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER" /v explorer.exe /t REG_DWORD /d "8" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER" /v iexplore.exe /t REG_DWORD /d "8" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER" /v iexplore.exe /t REG_DWORD /d "8" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN" /V DNSPreresolution /t REG_DWORD /d "8" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN" /V Use_Async_DNS /t REG_SZ /d "yes" /f > NUL 2>&1
+		reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /V DnsCacheEnabled /t REG_DWORD /d "1" /f > NUL 2>&1
+		reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /V DnsCacheEntries /t REG_DWORD /d "200" /f > NUL 2>&1
+		reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /V DnsCacheTimeout /t REG_DWORD /d "15180" /f > NUL 2>&1
+		reg add "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\Main" /V EnablePreBinding /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext" /V DisableAddonLoadTimePerformanceNotifications /t REG_DWORD /d "1" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext" /V NoFirsttimeprompt /t REG_DWORD /d "1" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V DisableInPrivateBlocking /t REG_DWORD /d "00000000" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V StartMode /t REG_DWORD /d "00000001" /f > NUL 2>&1
+		
+	:: Clear Internet Explorer Temporary files. Multi-tasking involved.
 	call :main.showProgress "Internet Explorer Cache" 1 3
-	copy %windir%\system32\rundll32.exe %temp%\rundll32-il.exe
-	icacls %temp%\rundll32-il.exe /setintegritylevel low
-	start "" %temp%\rundll32-il.exe InetCpl.cpl,ClearMyTracksByProcess 4351
-	regsvr32 /s actxprxy
-	del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
-	rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
-	del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
-	rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
-	del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
-	rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
+		start "" rundll32.exe InetCpl.cpl,ClearMyTracksByProcess 4351
+		regsvr32 /s actxprxy
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
+		
+	:: Use Large Pages on Chrome to improve performance.
 	call :main.showProgress "Chrome" 1 3
-	reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\chrome.exe" /V UseLargePages /t REG_DWORD /d "00000001" /f > NUL 2>&1
+		reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\chrome.exe" /V UseLargePages /t REG_DWORD /d "00000001" /f > NUL 2>&1
+		
+	:: Clear Flash/Macromedia caches.
 	call :main.showProgress "Flash/Macromedia" 1 3
-	del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
-	rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
+		
+	:: Check the existance of SpeedyFox in tools\. If not found the file or browsers are running, SpeedyFox task will be skipped.
 	if not exist "%~dp0tools\speedyfox.exe" (
 		call :main.showProgress "Not found SpeedyFox. Skipping..." 1 8
 		goto progress.telemetry
@@ -1264,114 +1397,121 @@ goto :EOF
 
 
 :: Disable the Telemetry services.
+:: Most of the tweaks came from Tron (r/TronScript). Thanks!
 :: /************************************************************************************/
 :progress.telemetry
 	call :main.showProgress "Services" 1 4
-	sc stop dmwappushservice > NUL 2>&1
-	sc config dmwappushservice start= disabled > NUL 2>&1
-	sc stop RetailDemo > NUL 2>&1
-	sc delete RetailDemo > NUL 2>&1
-	sc stop Diagtrack > NUL 2>&1
-	sc delete Diagtrack > NUL 2>&1
-	sc config RemoteRegistry start= disabled > NUL 2>&1
-	sc stop RemoteRegistry > NUL 2>&1
-	sc stop Wecsvc > NUL 2>&1
-	sc config Wecsvc start= disabled > NUL 2>&1
+		sc stop dmwappushservice > NUL 2>&1
+		sc config dmwappushservice start= disabled > NUL 2>&1
+		sc stop RetailDemo > NUL 2>&1
+		sc delete RetailDemo > NUL 2>&1
+		sc stop Diagtrack > NUL 2>&1
+		sc delete Diagtrack > NUL 2>&1
+		sc config RemoteRegistry start= disabled > NUL 2>&1
+		sc stop RemoteRegistry > NUL 2>&1
+		sc stop Wecsvc > NUL 2>&1
+		sc config Wecsvc start= disabled > NUL 2>&1
+		
 	call :main.showProgress "Xbox Services" 1 4
-	sc stop XblAuthManager > NUL 2>&1
-	sc stop XblGameSave > NUL 2>&1
-	sc stop XboxNetApiSvc > NUL 2>&1
-	sc stop XboxGipSvc > NUL 2>&1
-	sc stop xbgm > NUL 2>&1
-	sc config XblAuthManager start= manual > NUL 2>&1
-	sc config XblGameSave start= manual > NUL 2>&1
-	sc config XboxNetApiSvc start= manual > NUL 2>&1
-	sc config XboxGipSvc start= manual > NUL 2>&1
-	sc config xbgm start= manual > NUL 2>&1
+		sc stop XblAuthManager > NUL 2>&1
+		sc stop XblGameSave > NUL 2>&1
+		sc stop XboxNetApiSvc > NUL 2>&1
+		sc stop XboxGipSvc > NUL 2>&1
+		sc stop xbgm > NUL 2>&1
+		sc config XblAuthManager start= manual > NUL 2>&1
+		sc config XblGameSave start= manual > NUL 2>&1
+		sc config XboxNetApiSvc start= manual > NUL 2>&1
+		sc config XboxGipSvc start= manual > NUL 2>&1
+		sc config xbgm start= manual > NUL 2>&1
+		
 	call :main.showProgress "Registries Telemetry" 1 4
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\AutoLogger\AutoLogger-Diagtrack-Listener" /v "Start" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\software\microsoft\wcmsvc\wifinetworkmanager" /v "wifisensecredshared" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\software\microsoft\wcmsvc\wifinetworkmanager" /v "wifisenseopen" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\software\microsoft\windows defender\spynet" /v "spynetreporting" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\software\microsoft\windows defender\spynet" /v "submitsamplesconsent" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\software\policies\microsoft\windows\skydrive" /v "disablefilesync" /t REG_DWORD /d "1" /f > NUL 2>&1
-	reg add "HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack" /v "Start" /t REG_DWORD /d "4" /f > NUL 2>&1
-	reg add "HKLM\SYSTEM\CurrentControlSet\Services\dmwappushservice" /v "Start" /t REG_DWORD /d "4" /f > NUL 2>&1
-	reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowCortana" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowCortanaAboveLock" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowSearchToUseLocation" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v "DODownloadMode" /t REG_DWORD /d "00000000" /f > NUL 2>&1
-	reg load HKEY_LOCAL_MACHINE\defuser %USERPROFILES%\default\ntuser.dat >NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\defuser\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /V RotatingLockScreenOverlayEnabled /T REG_DWORD /D 00000000 /F >NUL 2>&1
-	reg unload HKEY_LOCAL_MACHINE\defuser >NUL 2>&1
-	reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection" /v AllowTelemetry /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\AutoLogger\AutoLogger-Diagtrack-Listener" /v "Start" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\software\microsoft\wcmsvc\wifinetworkmanager" /v "wifisensecredshared" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\software\microsoft\wcmsvc\wifinetworkmanager" /v "wifisenseopen" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\software\microsoft\windows defender\spynet" /v "spynetreporting" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\software\microsoft\windows defender\spynet" /v "submitsamplesconsent" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\software\policies\microsoft\windows\skydrive" /v "disablefilesync" /t REG_DWORD /d "1" /f > NUL 2>&1
+		reg add "HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack" /v "Start" /t REG_DWORD /d "4" /f > NUL 2>&1
+		reg add "HKLM\SYSTEM\CurrentControlSet\Services\dmwappushservice" /v "Start" /t REG_DWORD /d "4" /f > NUL 2>&1
+		reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowCortana" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowCortanaAboveLock" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowSearchToUseLocation" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v "DODownloadMode" /t REG_DWORD /d "00000000" /f > NUL 2>&1
+		reg load HKEY_LOCAL_MACHINE\defuser %USERPROFILES%\default\ntuser.dat >NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\defuser\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /V RotatingLockScreenOverlayEnabled /T REG_DWORD /D 00000000 /F >NUL 2>&1
+		reg unload HKEY_LOCAL_MACHINE\defuser >NUL 2>&1
+		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f > NUL 2>&1
+		
 	call :main.showProgress "Scheduler Tasks Telemetry" 1 4
-	schtasks /delete /F /TN "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\Application Experience\ProgramDataUpdater" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\Autochk\Proxy" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\Customer Experience Improvement Program\KernelCeipTask" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\PI\Sqm-Tasks" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem" > NUL 2>&1
-	schtasks /delete /F /TN "\Microsoft\Windows\Windows Error Reporting\QueueReporting" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\application experience\Microsoft compatibility appraiser" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\application experience\aitagent" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\application experience\programdataupdater" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\autochk\proxy" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\customer experience improvement program\consolidator" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\customer experience improvement program\kernelceiptask" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\customer experience improvement program\usbceip" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\diskdiagnostic\Microsoft-Windows-diskdiagnosticdatacollector" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\maintenance\winsat" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Application Experience\ProgramDataUpdater" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Autochk\Proxy" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Customer Experience Improvement Program\KernelCeipTask" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\PI\Sqm-Tasks" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem" > NUL 2>&1
+		schtasks /delete /F /TN "\Microsoft\Windows\Windows Error Reporting\QueueReporting" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\application experience\Microsoft compatibility appraiser" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\application experience\aitagent" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\application experience\programdataupdater" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\autochk\proxy" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\customer experience improvement program\consolidator" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\customer experience improvement program\kernelceiptask" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\customer experience improvement program\usbceip" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\diskdiagnostic\Microsoft-Windows-diskdiagnosticdatacollector" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\maintenance\winsat" > NUL 2>&1
+		
 	call :main.showProgress "Media Center Telemetry" 1 4
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\activateWindowssearch" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\configureinternettimeservice" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\dispatchrecoverytasks" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\ehdrminit" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\installplayready" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\mcupdate" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\mediacenterrecoverytask" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\objectstorerecoverytask" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\ocuractivate" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\ocurdiscovery" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\pbdadiscovery">nul 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\pbdadiscoveryw1" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\pbdadiscoveryw2" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\pvrrecoverytask" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\pvrscheduletask" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\registersearch" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\reindexsearchroot" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\sqlliterecoverytask" > NUL 2>&1
-	schtasks /delete /f /tn "\Microsoft\Windows\media center\updaterecordpath" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\activateWindowssearch" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\configureinternettimeservice" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\dispatchrecoverytasks" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\ehdrminit" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\installplayready" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\mcupdate" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\mediacenterrecoverytask" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\objectstorerecoverytask" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\ocuractivate" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\ocurdiscovery" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\pbdadiscovery">nul 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\pbdadiscoveryw1" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\pbdadiscoveryw2" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\pvrrecoverytask" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\pvrscheduletask" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\registersearch" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\reindexsearchroot" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\sqlliterecoverytask" > NUL 2>&1
+		schtasks /delete /f /tn "\Microsoft\Windows\media center\updaterecordpath" > NUL 2>&1
+		
 	call :main.showProgress "Auto-Logger" 1 4
-	if not exist %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\ mkdir %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\ >NUL 2>&1
-	echo. > %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl 2>NUL
-	echo y | cacls.exe "%ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl" /d SYSTEM >NUL 2>&1
+		if not exist %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\ mkdir %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\ >NUL 2>&1
+		echo. > %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl 2>NUL
+		echo y | cacls.exe "%ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl" /d SYSTEM >NUL 2>&1
+	
 	call :main.showProgress "Explorer Registries" 1 5
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{088e3905-0323-4b02-9826-5d99428e115f}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{1CF1260C-4DD0-4ebb-811F-33C572699FDE}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{24ad3ad4-a569-4530-98e1-ab02f9417aa8}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{374DE290-123F-4565-9164-39C4925E467B}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{3ADD1653-EB32-4cb0-BBD7-DFA0ABB5ACCA}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{3dfdf296-dbec-4fb4-81d1-6a3438bcf4de}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{A0953C92-50DC-43bf-BE83-3742FED03C9C}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{A8CDFF1C-4878-43be-B5FD-F8091C1C60D0}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{d3162b92-9365-467a-956b-92703aca08af}" /f > NUL 2>&1
-	reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{f86fa3ab-70d2-4fc7-9c99-fcbf05467f3a}" /f > NUL 2>&1
-	reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v LaunchTo /t REG_DWORD /d "1" /f > NUL 2>&1
-	reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t REG_DWORD /d "0" /f > NUL 2>&1
-	reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t REG_DWORD /d "1" /f > NUL 2>&1
-	reg delete "HKEY_CLASSES_ROOT\CABFolder\CLSID" /f > NUL 2>&1
-	reg delete "HKEY_CLASSES_ROOT\SystemFileAssociations\.cab\CLSID" /f > NUL 2>&1
-	reg delete "HKEY_CLASSES_ROOT\CompressedFolder\CLSID" /f > NUL 2>&1
-	reg delete "HKEY_CLASSES_ROOT\SystemFileAssociations\.zip\CLSID" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{088e3905-0323-4b02-9826-5d99428e115f}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{1CF1260C-4DD0-4ebb-811F-33C572699FDE}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{24ad3ad4-a569-4530-98e1-ab02f9417aa8}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{374DE290-123F-4565-9164-39C4925E467B}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{3ADD1653-EB32-4cb0-BBD7-DFA0ABB5ACCA}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{3dfdf296-dbec-4fb4-81d1-6a3438bcf4de}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{A0953C92-50DC-43bf-BE83-3742FED03C9C}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{A8CDFF1C-4878-43be-B5FD-F8091C1C60D0}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{d3162b92-9365-467a-956b-92703aca08af}" /f > NUL 2>&1
+		reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{f86fa3ab-70d2-4fc7-9c99-fcbf05467f3a}" /f > NUL 2>&1
+		reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v LaunchTo /t REG_DWORD /d "1" /f > NUL 2>&1
+		reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t REG_DWORD /d "0" /f > NUL 2>&1
+		reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t REG_DWORD /d "1" /f > NUL 2>&1
+		reg delete "HKEY_CLASSES_ROOT\CABFolder\CLSID" /f > NUL 2>&1
+		reg delete "HKEY_CLASSES_ROOT\SystemFileAssociations\.cab\CLSID" /f > NUL 2>&1
+		reg delete "HKEY_CLASSES_ROOT\CompressedFolder\CLSID" /f > NUL 2>&1
+		reg delete "HKEY_CLASSES_ROOT\SystemFileAssociations\.zip\CLSID" /f > NUL 2>&1
 :: /************************************************************************************/
 
 
@@ -1408,31 +1548,38 @@ goto :EOF
 			goto progress.fileHosts
 		)
 	call :main.showProgress "OneDrive" 1 6
-	taskkill /f /im OneDrive.exe > NUL 2>&1
-	powershell -Command "& {Get-AppxPackage -allusers *OneNote* | Remove-AppxPackage;}"
-	if exist %x64% (%x64% /uninstall) else (%x86% /uninstall)
-	reg add "HKCR\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d "0" /f
-	reg add "HKCR\Wow6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d "0" /f
-	rd "%USERPROFILE%\OneDrive" /Q /S > NUL 2>&1
-	rd "%HomeDrive%\OneDriveTemp" /Q /S > NUL 2>&1
-	rd "%LOCALAPPDATA%\Microsoft\OneDrive" /Q /S > NUL 2>&1
-	rd "%PROGRAMDATA%\Microsoft OneDrive" /Q /S > NUL 2>&1
+		taskkill /f /im OneDrive.exe > NUL 2>&1
+		powershell -Command "& {Get-AppxPackage -allusers *OneNote* | Remove-AppxPackage;}"
+		if exist %x64% (%x64% /uninstall) else (%x86% /uninstall)
+		reg add "HKCR\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d "0" /f
+		reg add "HKCR\Wow6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d "0" /f
+		rd "%USERPROFILE%\OneDrive" /Q /S > NUL 2>&1
+		rd "%HomeDrive%\OneDriveTemp" /Q /S > NUL 2>&1
+		rd "%LOCALAPPDATA%\Microsoft\OneDrive" /Q /S > NUL 2>&1
+		rd "%PROGRAMDATA%\Microsoft OneDrive" /Q /S > NUL 2>&1
 :: /************************************************************************************/
 
 
 :: Edit the Hosts to stop Telemetry.
 :: /************************************************************************************/
 :progress.fileHosts
+	:: Adding the addresses from the config file to Hosts file.
 	call :main.showProgress "Hosts File" 1 4
-	for /f "delims= skip=56" %%i in (config.txt) do (
-		findstr /c:"%%i" %WINDIR%\system32\drivers\etc\hosts > NUL 2>&1
-		IF !ERRORLEVEL! NEQ 0 echo 0.0.0.0 %%i>>%WINDIR%\System32\drivers\etc\hosts
-	)
+		for /f "delims= skip=56" %%i in (config.txt) do (
+			findstr /c:"%%i" %WINDIR%\system32\drivers\etc\hosts > NUL 2>&1
+			IF !ERRORLEVEL! NEQ 0 echo 0.0.0.0 %%i>>%WINDIR%\System32\drivers\etc\hosts
+		)
+	
+	:: Set the DNS to 1.1.1.1/1.0.0.1, the fastest and best DNS by CloudFlare.
 	call :main.showProgress "DNS" 1 2
-	wmic nicconfig where (IPEnabled=TRUE) call SetDNSServerSearchOrder ("1.1.1.1", "1.0.0.1")
-	call :main.showProgress "Adapters" 1 7
-	set checkInterfaceMode=2
-	call :progress.getInterfaceName
+		wmic nicconfig where (IPEnabled=TRUE) call SetDNSServerSearchOrder ("1.1.1.1", "1.0.0.1")
+		
+	:: Restarting the adapters. This has to be done on every adapters.
+	call :main.showProgress "Restart Adapters" 1 7
+		set checkInterfaceMode=2
+		call :progress.getInterfaceName
+	
+	:: Waiting for the Internet Connection to estabilshed.
 	if !lang!==0 (call :main.showProgress "Internet Connection" 1 1) else (call :main.showProgress "Kết nối Internet" 1 1)
 	if %internetStatus%==0 goto progress.checkLatency2
 :: /************************************************************************************/
@@ -1451,6 +1598,7 @@ goto :EOF
 :progress.checkLatency2
 	if !lang!==0 (call :main.showProgress "Checking the Current Latency" 1 1) else (call :main.showProgress "Kiểm tra Độ trễ Hiện tại" 1 1)
 	if %checkPingEnable%==0 goto main.afterSetting
+	:: Prevent the command from errors.
 	if %internetStatus%==0 set failedPingCheck=1
 	if %failedPingCheck%==1 goto main.checkResults
 	for /F "delims=" %%a in ('ping "%pingURL%" -n 2 ^| findstr TTL') do (
@@ -1466,6 +1614,7 @@ goto :EOF
 :: Also calculate the improvement rate.
 :: /************************************************************************************/
 :main.checkResults
+	:: Set the result to "?" if the commands got some errors.
 	if %failedPingCheck%==1 (
 		set pingBefore=?
 		set pingAfter=?
@@ -1485,7 +1634,6 @@ goto :EOF
 	set timerEnd=%time%
 	call :main.timer
 	set counterb=10000
-	del /f /q %temp%\rundll32-il.exe > nul 2>&1
 :: /************************************************************************************/
 
 
