@@ -9,7 +9,7 @@ This script **optimizes your connection** by lots of **verified methods.**
 
 ## Getting Started
 
-* To use **SPI**, download the **self-extracting .exe** file given, run it and it will **extract SPI.cmd, the tools\ folder and the Shortcut** to the current directory.
+* To use **SPI**, download the **self-extracting .exe** file above (SPI.exe), run it and it will **extract SPI.cmd, the tools\ folder and the Shortcut** to the current directory.
 * Copy **all of them** to the desired directory of the target machine.
 
 ## Prerequisites
