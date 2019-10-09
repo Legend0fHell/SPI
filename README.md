@@ -68,6 +68,7 @@ Contains the result of some tools in "Additional Tools" menu.
 
 ### Prep Works
 (These works are executed even when SPI is cancelled before running.)
+
   0. Load the configuration files and set the prompt: Load and validate the configuration in config.txt and set the prompt (variables, width, height, etc.)
   1. Check if the script was run by the given shortcut: The shortcut will help to set the prompt font to echo Vietnamese characters (ă, ự, ớ, etc.), and make sure that the script is running at Admin privellege.
   2. Preloading PowerShell: PowerShell takes a lot of time to open, so SPI will load PowerShell first to save precious time.
@@ -83,7 +84,7 @@ Contains the result of some tools in "Additional Tools" menu.
   2. Reset TCP/IP: Reset the TCP/IP. TCP/IP stands for Transmission Control Protocol/Internet Protocol, it is a type of protocol used to communicate with other computers.
   ```
   netsh int ip reset %HomeDrive%\resetlog.txt
-	netsh int ip reset reset.log
+  netsh int ip reset reset.log
   ```
   3. Flush the DNS Cache: Flush the DNS Cache to solve technical problems.
   ```
@@ -104,7 +105,7 @@ Contains the result of some tools in "Additional Tools" menu.
   7. Disable Receive Segment Coalescing: RSC is offload technology that offloading tasks from the CPU to an RSC-capable network adapter. CPU saturation due to networking-related processing can limit server scalability. This problem in turn reduces the transaction rate, raw throughput, and efficiency.
   ```
   netsh int tcp set global rsc=disabled
-	Set-NetOffloadGlobalSetting -ReceiveSegmentCoalescing disabled;
+  Set-NetOffloadGlobalSetting -ReceiveSegmentCoalescing disabled;
   ```
   8. Disable Packet Coalescing: Packet Coalescing is used to group both random and multicast traffic for efficiency. This should be disabled for gaming and where lower latency is desired at the expense of a bit higher CPU utilization.
   ```
