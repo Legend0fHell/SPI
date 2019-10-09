@@ -111,9 +111,9 @@ Contains the result of some tools in "Additional Tools" menu.
   ```
   Set-NetOffloadGlobalSetting -PacketCoalescingFilter disabled;
   ```
-  9. Disable Checksum Offload: Checksum Offload involves computing these checksums below the IP stack; thus the driver or NIC firmware must partially dismantle the IP header in order to compute a correct checksum. It can cause havoc to the NIC drivers.
+  9. Enable Checksum Offload: Checksum Offload involves computing these checksums below the IP stack; thus the driver or NIC firmware must partially dismantle the IP header in order to compute a correct checksum. It is also required for some other offloads to work.
   ```
-  Disable-NetAdapterChecksumOffload -Name *;
+  Enable-NetAdapterChecksumOffload -Name *;
   ```
   10. Disable Large Send Offload: When enabled, the network adapter hardware is used to complete data segmentation, theoretically faster than operating system software. Its buggy implementation on many levels, including Network Adapters can cause errors.
   ```
@@ -127,8 +127,38 @@ Contains the result of some tools in "Additional Tools" menu.
   ```
   netsh int tcp set global initialRto=2500
   ```
-  13. WIP
-
+  13. Set Min RTO to 300ms: Same as above. Min RTO can't be changed under Windows 8 (read-only error).
+  ```
+  set-NetTCPSetting -SettingName InternetCustom -MinRto 300;
+  ```
+  14. Set the Add-On Congestion Control Provider (CTCP): A regular network connection will send data in small blocks initially, increasing these only gradually to help avoid network congestion. CTCP takes a different approach, ramping up your TCP window size much more aggressively, so enabling CTCP may improve performance.
+  ```
+  netsh int tcp set global congestionprovider=ctcp
+	Set-NetTCPSetting -SettingName InternetCustom -CongestionProvider CTCP;
+	netsh int tcp set supplemental custom congestionprovider=ctcp
+  ```
+  15. Enable ECN: Explicit Congestion Notification provides routers with an alternate method of communicating network congestion. It is aimed to decrease retransmissions.
+  ```
+  netsh int tcp set global ecn=enabled
+  ```
+  16. Disable Scaling Heuristics: Prevent it from restricting the Window Auto-Tuning Level, which is set below.
+  ```
+  netsh int tcp set heuristics disabled
+  ```
+  17. Set Receive Window Auto-Tuning Level to Normal: It has a very important role in TCP connections. It can control throughput, especially in high-speed, high-latency environments.
+  ```
+  netsh int tcp set global autotuninglevel=normal
+  ```
+  18. Disable TCP Chimney Offload: TCP Chimney Offload will offload all TCP processing for a connection to a network adapter (with proper driver support). Enabling this setting had some negative effects in the past because of buggy network adapter drivers. It is now considered deprecated by Microsoft.
+  ```
+  netsh int tcp set global chimney=disabled
+  ```
+  19. Enable RSS (Receive-Side Scaling State): It enables parallelized processing of received packets on multiple processors, while avoiding packet reordering. This approach ensures that all packets belonging to a given TCP connection will be queued to the same processor, in the same order that they were received by the network adapter.
+  ```
+  netsh int tcp set global rss=enabled
+	netsh interface tcp set heuristics wsh=enabled
+  ```
+  20. WIP
 # Screenshots
 ![Screenshot](screenshot/01.png)
 ![Screenshot](screenshot/02.png)
