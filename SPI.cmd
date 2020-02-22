@@ -1,14 +1,13 @@
-:: =====================================================================================
+﻿:: =====================================================================================
 ::
-::                   Speed Up Internet - Fix Internet Connection [SPI]
+::                   Restart Internet Connection - Fix Internet Connection [SPI]
 ::                                  Introductory Header
 ::
 ::         FILE: SPI.cmd
 ::
-::  DESCRIPTION: SPI is a script that "fights for the User."
-::               This script optimizes your connection by lots of
-::               verified methods.
-::
+::  DESCRIPTION: SPI is a script that restart the connection, and also optimizes
+::				 your connection by lots of verified methods.
+::               
 ::        USAGE: One-press optimization.
 ::               Open by the given shortcut.
 ::
@@ -16,9 +15,9 @@
 ::               Services related to Internet connection must be turned on.
 ::
 ::       AUTHOR: Pham Nhat Quang [Legend0fHell]
-::      VERSION: 4.1b1
+::      VERSION: 4.2.0
 ::      CREATED: 06.08.‎2016 - ‏‎15:29:37
-::     REVISION: 06.10.2019
+::     REVISION: 22.02.2020
 ::
 :: =====================================================================================
 ::
@@ -39,8 +38,9 @@
 	CHCP 1258 >nul 2>&1
 	CHCP 65001 >nul 2>&1
 	setlocal EnableExtensions EnableDelayedExpansion
-	set ver=4.1.0
-	set verdate=Oct 08 2019
+	set ver=4.2.0
+	set verdate=Feb 22 2019
+	set configLineSkip=56
 	color 0e
 :: /************************************************************************************/
 
@@ -58,6 +58,8 @@
 	set pingURL=facebook.com
 	set promptUseEnable=1
 	set customHosts=0
+	set operateMode=0
+	set end=12
 :: /************************************************************************************/
 
 
@@ -80,6 +82,8 @@
 		set existConfig=0
 	)
 	call :config.update
+	call :main.setVariables
+	goto main.checkShortcut
 :: /************************************************************************************/
 
 
@@ -87,7 +91,7 @@
 :: /************************************************************************************/
 :main.setVariables
 	mode con cols=!width! lines=!height!
-	title SPI ^| Speed Up Internet - Fix Internet Connection
+	title SPI ^| Restart Internet Connection - Fix Internet Connection
 	set "valuecore="
 	set "core="
 	for /l %%G in (!width!,-1,1) do (
@@ -99,14 +103,13 @@
 	set label=Starting&call :main.label 8
 	set internetStatus=1
 	set now=-1
-	set end=72
 	set /a length=!end! * (!width! / (!end!+2))
 	set /a left=(!width!-!length!)/2-1
 	set /a between=!width!-8-(!left!*2)
 	set /a endprog=10000/!end!
 	set /a char=!length!/!end!
-	set /a centreTitleEN=(!width!-41)/2
-	set /a centreTitleVI=(!width!-38)/2
+	set /a centreTitleEN=(!width!-51)/2
+	set /a centreTitleVI=(!width!-51)/2
 	set /a centreAuthor=(!width!-36)/2
 	set counter=0
 	set counterb=000
@@ -114,6 +117,7 @@
 	set failedPingCheck=0
 	set showInfo=0
 	set browsersFound=0
+goto :EOF
 :: /************************************************************************************/
 
 
@@ -151,7 +155,7 @@
 	for /f delims^=^ eol^=# %%i in ('findstr "=" config.txt') do (set "%%i") >nul
 	if %customHosts%==1 (
 		del /f /q %temp%\customHosts.txt >nul
-		for /f "delims= skip=56" %%i in (config.txt) do (
+		for /f "delims= skip=%configLineSkip%" %%i in (config.txt) do (
 			echo %%i>>"%temp%\customHosts.txt"
 		)
 	)
@@ -159,7 +163,7 @@ goto :EOF
 :: /************************************************************************************/
 
 
-:: Update the config with new settings or reset it.
+:: Update the config with new settings or restart it.
 :: /************************************************************************************/
 :config.update
 	if !existConfig!==1 call :config.set
@@ -169,7 +173,6 @@ goto :EOF
 		echo configVersion=!ver!-!verdate!
 		echo.
 		echo [Script Settings]
-		echo.
 		echo # Change the Width of the Console. [Default: 90 - For the best appearance] [Min: 80] [Character]
 		echo width=!width!
 		echo.
@@ -529,9 +532,9 @@ goto :EOF
 :: Set GUI elements.
 :: /************************************************************************************/
 :main.setGUI
-	title SPI ^| Speed Up Internet - Fix Internet Connection
+	title SPI ^| Restart Internet Connection - Fix Internet Connection
 	set optYn= [Y] Accept  [N] Decline
-	set optYnC= [Y] Optimize  [T] Additional Tools  [I] Additional Info
+	set optYnC= [Y] Restart  [T] Additional Tools  [I] Info  [O] Optimize
 	set optCS= [C] Close  [S] Skip
 	set optOC= [O] Open  [C] Close
 	set autoAcceptMsg= Automatically accept in %autoChoose% second[s].
@@ -548,13 +551,13 @@ goto :EOF
 	set progress[9]=Registry Settings
 	set progress=Progress
 	set "titleMoreTool=SPI ^| Additional Tools"
-	set title=!space:~0,%centreTitleEN%!Speed Up Internet - Fix Internet Connection 
+	set title=!space:~0,%centreTitleEN%!Restart Internet Connection - Fix Internet Connection
 	set subtitle=!space:~0,%centreAuthor%!- Legend0fHell - %ver% - %verdate% -
 	set noInternet=Your Internet connection has some problems. Please check.
 	if !lang!==1 (
-		title SPI ^| Tăng Tốc Internet - Sửa Kết nối Internet
+		title SPI ^| Khởi động lại Kết nối Internet - Sửa Kết nối Internet
 		set optYn= [Y] Đồng ý  [N] Từ chối
-		set optYnC= [Y] Tối ưu  [T] Công cụ Bổ sung  [I] Thông tin Bổ sung
+		set optYnC= [Y] Khởi động lại  [T] Công cụ Bổ sung  [I] Thông tin  [O] Tối ưu
 		set optCS= [C] Đóng  [S] Bỏ qua
 		set optOC= [O] Mở  [C] Đóng
 		set autoAcceptMsg= Tự động đồng ý trong %autoChoose% giây.
@@ -571,12 +574,12 @@ goto :EOF
 		set progress[9]=Cài đặt Registry
 		set progress=Tiến trình
 		set "titleMoreTool=SPI ^| Công cụ Bổ sung"
-		set title=!space:~0,%centreTitleVI%!Tăng Tốc Internet - Sửa Kết nối Internet
+		set title=!space:~0,%centreTitleVI%!Khởi động lại Kết nối Internet - Sửa Kết nối Internet
 		set subtitle=!space:~0,%centreAuthor%!- Legend0fHell - %ver% - %verdate% -
 		set noInternet=Kết nối Internet của bạn có vấn đề. Hãy kiểm tra.
 	)
 	if %promptUseEnable%==0 (
-		call :main.showProgress "Ready to Optimize" 2 8
+		call :main.showProgress "Ready" 2 8
 		goto main.preSetting
 	)
 :: /************************************************************************************/
@@ -586,14 +589,14 @@ goto :EOF
 :: /************************************************************************************/
 :main.confirmUse
 	if !lang!==0 (
-		call :main.showProgress "Ready to Optimize" 2 8
-		echo  Speed Up Internet [SPI] is a script that optimizes your connection.
+		call :main.showProgress "Ready" 2 8
+		echo  Restart Internet Connection [SPI] is a script that restarts your connection.
 		echo.
 		echo  Using this will interrupt your Internet connection for a very short time.
 		echo  THIS SCRIPT WILL NOT REVERSE CHANGES. Use this script at your OWN RISKS.
 	) else (
-		call :main.showProgress "Sẵn sàng Tối ưu hóa" 2 8
-		echo  Tăng Tốc Internet [SPI] là công cụ tối ưu hóa đường truyền của bạn.
+		call :main.showProgress "Sẵn sàng" 2 8
+		echo  Khởi động lại Kết nối Internet [SPI] là công cụ khởi động lại đường truyền của bạn.
 		echo.
 		echo  Sử dụng công cụ này sẽ ngắt kết nối Internet của bạn trong thời gian rất ngắn.
 		echo  CÔNG CỤ KHÔNG ĐẢO NGƯỢC NHỮNG THAY ĐỔI. Bạn CHỊU TRÁCH NHIỆM khi dùng công cụ.
@@ -602,32 +605,34 @@ goto :EOF
 	if %showInfo%==1 (
 		echo.
 		if !lang!==0 (
-			echo  This script will speed up Internet by doing the following works:
+			echo  This script will restart Internet connection by doing the following works:
+			echo         + Flush DNS, release and renew IP.
+			echo         + Delete unnecessary files.
+			echo         + Run SpeedyFox - a safe browsers optimization tool.
+			echo         + Restart networks adapters.
+			echo  This script will optimize Internet connection by doing the following works:
 			echo         + Configurate TCP/IP/DNS.
 			echo         + Change Telemetry Settings, stop sending data to Microsoft.
 			echo         + Uninstall OneDrive/OneNote, modify Explorer.
-			echo         + Change Registry settings.
-			echo         + Change Hosts file.
-			echo         + Tweak network adapters.
-			echo         + Delete unnecessary files.
-			echo         + Run SpeedyFox - a safe browsers optimization tool.
+			echo         + Change Registry settings, Hosts file, and network adapters.
 			echo         + Settings that reduce ping on many games: PUBG, CS:GO, LoL, etc.
 		) else (
+			echo  Công cụ này sẽ khởi động lại kết nối Internet bằng các việc sau:
+			echo         + Xả DNS, làm mới IP.
+			echo         + Xóa bỏ những file thừa, file rác.
+			echo         + Chạy SpeedyFox - công cụ tối ưu hóa trình duyệt an toàn.
+			echo         + Khởi động lại các adapter mạng.
 			echo  Công cụ này sẽ tối ưu tốc độ Internet bằng các việc sau:
 			echo         + Thay đổi cài đặt TCP/IP/DNS.
 			echo         + Thay đổi cài đặt Telemetry, chặn dữ liệu tới Microsoft.
 			echo         + Gỡ cài đặt OneDrive/OneNote, chỉnh sửa Explorer.
-			echo         + Thay đổi cài đặt trong Registry.
-			echo         + Chỉnh sửa file Hosts.
-			echo         + Khởi động lại các adapter mạng.
-			echo         + Xóa bỏ những file thừa, file rác.
-			echo         + Chạy SpeedyFox - công cụ tối ưu hóa trình duyệt an toàn.
+			echo         + Thay đổi cài đặt trong Registry, file Hosts, và các adapter mạng.
 			echo         + Các thiết đặt giảm độ trễ cho rất nhiều game: PUBG, CS:GO, LoL, v.v.
 		)
 	)
 	echo.
 	echo %autoAcceptMsg%
-	choice /c yti /n /t %autoChoose% /d y /m "%optYnC%"
+	choice /c ytio /n /t %autoChoose% /d y /m "%optYnC%"
 		if %errorlevel%==1 goto main.preSetting
 		if %errorlevel%==2 (
 			set errorMoreTool=.
@@ -637,6 +642,10 @@ goto :EOF
 			if %showInfo%==0 (set showInfo=1) else (set showInfo=0)
 			set noPhaseChanged=1
 			goto main.confirmUse
+		)
+		if %errorlevel%==4 (
+			set operateMode=1
+			goto main.preSetting
 		)
 :: /************************************************************************************/
 
@@ -990,6 +999,10 @@ goto :EOF
 :: Commands to do before running the tweaks.
 :: /************************************************************************************/
 :main.preSetting
+	if %operateMode%==1 (
+		set end=72
+		call :main.setVariables
+	)
 	if %noPhaseChanged%==1 set noPhaseChanged=0
 	if %browsersFound%==1 (
 		set counterb=000
@@ -1026,12 +1039,13 @@ goto :EOF
 :: Check the latency if the option is enabled.
 :: /************************************************************************************/
 :progress.checkLatency1
+	set now=0
 	if !lang!==0 (call :main.showProgress "Checking the Latency" 1 1) else (call :main.showProgress "Kiểm tra Độ trễ" 1 1)
-	if %checkPingEnable%==0 goto progress.TCPIP
+	if %checkPingEnable%==0 goto progress.restartConnection
 	:: Prevent the command from errors.
 	if %internetStatus%==0 (
 		set failedPingCheck=1
-		goto progress.TCPIP
+		goto progress.restartConnection
 	)
 	for /F "delims=" %%a in ('ping "%pingURL%" -n 2 ^| findstr TTL') do (
 	   set line=%%a
@@ -1042,15 +1056,14 @@ goto :EOF
 :: /************************************************************************************/
 
 
-:: Run TCP/IP/DNS tweaks.
-:: /************************************************************************************/
-:progress.TCPIP
+:: RESTART THE CONNECTION MODULE
+:progress.restartConnection
 	:: Reset WinSock
 	call :main.showProgress "WinSockReset" 1 2
 		netsh winsock reset
 		
 	:: Reset the Log file in 2 directories.
-	call :main.showProgress "Reset Log" 1 2
+	call :main.showProgress "Reset TCP/IP" 1 2
 		netsh int ip reset %HomeDrive%\resetlog.txt
 		netsh int ip reset reset.log
 		
@@ -1065,10 +1078,54 @@ goto :EOF
 	:: Renew the IP. Multi-tasking this progress because this takes a lot of time.
 	call :main.showProgress "Renew IP" 1 2
 		start "SPI | %percent%%% %now%/%end% - Renew IP [!splitTitle!]" /MIN cmd /c ipconfig /renew"
+	
+	:: Clear Internet Explorer Temporary files. Multi-tasking involved.
+	call :main.showProgress "Internet Explorer Cache" 1 3
+		start "" rundll32.exe InetCpl.cpl,ClearMyTracksByProcess 4351
+		regsvr32 /s actxprxy
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
 		
+	:: Clear Flash/Macromedia caches.
+	call :main.showProgress "Flash/Macromedia" 1 3
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
+		
+	:: Check the existance of SpeedyFox in tools\. If not found the file or browsers are running, SpeedyFox task will be skipped.
+	if not exist "%~dp0tools\speedyfox.exe" (
+		call :main.showProgress "Not found SpeedyFox. Skipping..." 1 8
+		goto progress.restartConnection2
+	)
+	if %browsersFound%==0 (call :progress.SpeedyFox) else (call :main.showProgress "Found browsers' instances. Skipping..." 1 8)
+	
+:progress.restartConnection2
+	:: Restarting the adapters. This has to be done on every adapters.
+	call :main.showProgress "Restart Adapters" 1 7
+		set checkInterfaceMode=2
+		call :progress.getInterfaceName
+	
+	if %operateMode%==1 goto progress.Opt.TCPIP
+	
+	:: Waiting for the Internet Connection to estabilshed.
+	if !lang!==0 (call :main.showProgress "Internet Connection" 1 1) else (call :main.showProgress "Kết nối Internet" 1 1)
+	if %internetStatus%==0 goto progress.checkLatency2
+	goto progress.waitInternet
+	
+:: Run TCP/IP/DNS tweaks.
+:: /************************************************************************************/
+:progress.Opt.TCPIP
 	:: Delete the ARP Cache
 	call :main.showProgress "ARP Cache" 1 2
 		netsh interface ip delete arpcache
+		
+	:: Use the custom template.
+	call :main.showProgress "Custom Template" 1 2
+		netsh int tcp set supplemental Custom
+		netsh int tcp set supplemental InternetCustom
 		
 	:: Disable Receive Segment Coalescing.
 	call :main.showProgress "Receive Segment Coalescing" 1 2
@@ -1103,7 +1160,9 @@ goto :EOF
 	call :main.showProgress "Add-On Congestion Control Provider" 1 2
 		netsh int tcp set global congestionprovider=ctcp
 		powershell -Command "& {Set-NetTCPSetting -SettingName InternetCustom -CongestionProvider CTCP;}"
-		netsh int tcp set supplemental custom congestionprovider=ctcp
+		powershell -Command "& {Set-NetTCPSetting -SettingName Custom -CongestionProvider CTCP;}"
+		netsh int tcp set supplemental Custom congestionprovider=ctcp
+		netsh int tcp set supplemental InternetCustom congestionprovider=ctcp
 		
 	:: Enable ECN.
 	call :main.showProgress "ECN" 1 2
@@ -1130,8 +1189,8 @@ goto :EOF
 	call :main.showProgress "Direct Cache Access" 1 2
 		netsh int tcp set global dca=enabled
 		
-	:: Enable Non Sack RTT Resiliency.
-	call :main.showProgress "Non Sack RTT Resiliency" 1 2
+	:: Enable Non SACK RTT Resiliency.
+	call :main.showProgress "Non SACK RTT Resiliency" 1 2
 		netsh int tcp set global nonsackrttresiliency=enabled >nul
 	
 	:: Set Max SYN Retransmissions to 2.
@@ -1142,10 +1201,7 @@ goto :EOF
 	call :main.showProgress "Initial Congestion Window" 1 2
 		powershell -Command "& {Set-NetTCPSetting -SettingName InternetCustom -InitialCongestionWindow 10;}"
 		netsh int tcp set supplemental template=custom icw=10
-		
-	:: Disable Network Direct Memory Access.
-	call :main.showProgress "Network Direct Memory Access" 1 2
-		netsh interface tcp set global netdma=disabled
+		netsh int tcp set supplemental template=InternetCustom icw=10
 		
 	:: Disable Memory Pressure Protection.
 	call :main.showProgress "Memory Pressure Protection" 1 2
@@ -1339,7 +1395,7 @@ goto :EOF
 	) else (
 		call :main.showProgress "Chạy SpeedyFox - Công cụ tối ưu an toàn" 1 3
 	)
-	start "SPI | %percent%%% %now%/%end% - SpeedyFox [!splitTitle!]" /MIN cmd /c %~dp0tools\speedyfox.exe "/Chrome:all" "/Firefox:all" "/Opera:all"
+	start "SPI | %percent%%% %now%/%end% - SpeedyFox [!splitTitle!]" /MIN cmd /c ""%~dp0tools\speedyfox.exe" "/Chrome:all" "/Firefox:all" "/Opera:all""
 	:: Deleting Chrome caches.
 	for /d %%b in (%SystemDrive%\Users\*) do del /Q "%%b\AppData\Local\Google\User Data\Default\cache\*"
 goto :EOF
@@ -1365,33 +1421,11 @@ goto :EOF
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext" /V NoFirsttimeprompt /t REG_DWORD /d "1" /f > NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V DisableInPrivateBlocking /t REG_DWORD /d "00000000" /f > NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V StartMode /t REG_DWORD /d "00000001" /f > NUL 2>&1
-		
-	:: Clear Internet Explorer Temporary files. Multi-tasking involved.
-	call :main.showProgress "Internet Explorer Cache" 1 3
-		start "" rundll32.exe InetCpl.cpl,ClearMyTracksByProcess 4351
-		regsvr32 /s actxprxy
-		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
-		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
-		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
-		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
-		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
-		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
-		
+	
 	:: Use Large Pages on Chrome to improve performance.
 	call :main.showProgress "Chrome" 1 3
 		reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\chrome.exe" /V UseLargePages /t REG_DWORD /d "00000001" /f > NUL 2>&1
 		
-	:: Clear Flash/Macromedia caches.
-	call :main.showProgress "Flash/Macromedia" 1 3
-		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
-		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
-		
-	:: Check the existance of SpeedyFox in tools\. If not found the file or browsers are running, SpeedyFox task will be skipped.
-	if not exist "%~dp0tools\speedyfox.exe" (
-		call :main.showProgress "Not found SpeedyFox. Skipping..." 1 8
-		goto progress.telemetry
-	)
-	if %browsersFound%==0 (call :progress.SpeedyFox) else call :main.showProgress "Found browsers' instances. Skipping..." 1 8
 	goto progress.telemetry
 :: /************************************************************************************/
 
@@ -1565,7 +1599,7 @@ goto :EOF
 :progress.fileHosts
 	:: Adding the addresses from the config file to Hosts file.
 	call :main.showProgress "Hosts File" 1 4
-		for /f "delims= skip=56" %%i in (config.txt) do (
+		for /f "delims= skip=%configLineSkip%" %%i in (config.txt) do (
 			findstr /c:"%%i" %WINDIR%\system32\drivers\etc\hosts > NUL 2>&1
 			IF !ERRORLEVEL! NEQ 0 echo 0.0.0.0 %%i>>%WINDIR%\System32\drivers\etc\hosts
 		)
@@ -1574,14 +1608,9 @@ goto :EOF
 	call :main.showProgress "DNS" 1 2
 		wmic nicconfig where (IPEnabled=TRUE) call SetDNSServerSearchOrder ("1.1.1.1", "1.0.0.1")
 		
-	:: Restarting the adapters. This has to be done on every adapters.
-	call :main.showProgress "Restart Adapters" 1 7
-		set checkInterfaceMode=2
-		call :progress.getInterfaceName
-	
 	:: Waiting for the Internet Connection to estabilshed.
 	if !lang!==0 (call :main.showProgress "Internet Connection" 1 1) else (call :main.showProgress "Kết nối Internet" 1 1)
-	if %internetStatus%==0 goto progress.checkLatency2
+	if %internetStatus%==0 goto progress.checkLatency2	
 :: /************************************************************************************/
 
 
