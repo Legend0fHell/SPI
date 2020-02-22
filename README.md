@@ -1,13 +1,13 @@
 # SPI
-**Speed Up Internet** (also called **SPI**) is a **Batch/PowerShell** script that **"fights for the User."**
-This script **optimizes your connection** by lots of **verified methods.**
+**Restart Internet Connection** (Formerly known as **SPI**) is a **Batch/PowerShell** script that **restart the connection**, and also **optimizes your connection** by lots of **verified methods.**
 
 ## NOTE
-* I'm currently needing **your help**. If you got any suggestion about the script, like the tweaks or the script code itself, **issue** or **make a pull request.**
 
-* This script only works with Windows 7 and above. Not recommended for all versions of Windows Server.
+* This script only works with **Windows 7 and above**. Not recommended for all versions of Windows Server.
 
-* **THIS SCRIPT WILL NOT REVERSE CHANGES. Use the script at your OWN RISKS.**
+* ~~THIS SCRIPT WILL NOT REVERSE CHANGES. Use the script at your OWN RISKS~~ I'm currently working on this feature.
+
+* Latest revision: v4.2.0 @ Feb 22 2020
 
 ## Getting Started
 
@@ -29,11 +29,10 @@ One-press optimization. Open by **the given shortcut** for it to work.
 
 ## Authors
 
-* **Pham Nhat Quang** - *Main author* - [Legend0fHell](https://github.com/Legend0fHell/)
+* **Legend0fHell** - *Main author* - [GitHub](https://github.com/Legend0fHell/)
 
 ## Special Thanks:
 
-* **Nguyen Ba Hung** - *Tester*
 * **Tron** - *Tweaks related to Telemetry removal, and my inspiration* - [r/TronScript](https://www.reddit.com/r/TronScript/)
 * **SpeedyFox** - *Optimize browsers* - [SpeedyFox](https://www.crystalidea.com/speedyfox/)
 * **Everyone in StackOverflow and SuperUser** - *Help me with coding*
@@ -47,7 +46,7 @@ One-press optimization. Open by **the given shortcut** for it to work.
 ## Acknowledgments
 
 * This script is not contain any malicious codes/viruses.
-* All the modules were commented for you to see what SPI does.
+* All the modules were commented clearly.
 * To improve the optimize speed, this script will use multi-task technique, meaning that there will be
 several instances running all at once.
 * Debugging is always harder than programming, so if you write code as cleverly as you know how, by
