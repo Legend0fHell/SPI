@@ -1,4 +1,4 @@
-﻿:: =====================================================================================
+:: =====================================================================================
 ::
 ::                   Restart Internet Connection - Fix Internet Connection [SPI]
 ::                                  Introductory Header
@@ -15,21 +15,31 @@
 ::               Services related to Internet connection must be turned on.
 ::
 ::       AUTHOR: Pham Nhat Quang [Legend0fHell]
-::      VERSION: 4.2.0
+::      VERSION: 4.2.1
 ::      CREATED: 06.08.‎2016 - ‏‎15:29:37
-::     REVISION: 22.02.2020
+::     REVISION: 21.03.2020
 ::
 :: =====================================================================================
 ::
 ::                                         Notes
 ::
 :: This script is not contain any malicious codes/viruses. All the modules were commented.
-:: To improve the optimize speed, this script will use multi-task technique, meaning that there will be several instances running all at once.
+:: To improve the optimize speed, this script will use multi-tasking, meaning that there will be several instances running all at once.
 :: Debugging is always harder than programming, so if you write code as cleverly as you know how, by definition you will be unable to debug it.
 ::
 :: =====================================================================================
-
-
+::
+::                                       Changelog
+::
+::    Version 4.2.1 [21.03.2020]
+::  * ADD:
+:: - Added a module to check for current Operating System.
+:: - Added some more registry keys in the Blocking Telemetry module.
+::  * CHANGES:
+:: - General improvement in the code.
+:: - Fixed localization errors.
+::
+:: =====================================================================================
 
 :: Set console.
 :: /************************************************************************************/
@@ -38,8 +48,8 @@
 	CHCP 1258 >nul 2>&1
 	CHCP 65001 >nul 2>&1
 	setlocal EnableExtensions EnableDelayedExpansion
-	set ver=4.2.0
-	set verdate=Feb 22 2019
+	set ver=4.2.1
+	set verdate=Mar 21 2019
 	set configLineSkip=56
 	color 0e
 :: /************************************************************************************/
@@ -83,7 +93,7 @@
 	)
 	call :config.update
 	call :main.setVariables
-	goto main.checkShortcut
+	goto main.checkVer
 :: /************************************************************************************/
 
 
@@ -118,6 +128,46 @@
 	set showInfo=0
 	set browsersFound=0
 goto :EOF
+:: /************************************************************************************/
+
+
+:: Check the OS version.
+:: /************************************************************************************/
+:main.checkVer
+	ver | findstr /i "6\.1\." > nul
+	if %ERRORLEVEL% EQU 0 (
+		set ChOS=Windows 7
+		set OSAllowed=1
+	)
+	ver | findstr /i "6\.2\." > nul
+	if %ERRORLEVEL% EQU 0 (
+		set ChOS=Windows 8
+		set OSAllowed=1
+	)
+	ver | findstr /i "6\.3\." > nul
+	if %ERRORLEVEL% EQU 0 (
+		set ChOS=Windows 8.1
+		set OSAllowed=1
+	)
+	ver | findstr /i "10\.0\." > nul
+	if %ERRORLEVEL% EQU 0 (
+		set ChOS=Windows 10
+		set OSAllowed=1
+	)
+	if %OSAllowed% NEQ 1 (
+		cls
+		set label=Failed&call :main.label 6
+		echo  You MUST use Windows 7 or newer versions in order for the script to work.
+		echo  Supported System: Windows 7, 8, 8.1, 10. Windows Server is NOT RECOMMENDED.
+		echo  Press any key to exit.
+		echo.
+		set label=That bai&call :main.label 8
+		echo  Ban PHAI sử dụng Windows 7 hoac phien ban moi hon đe su dung dung cu.
+		echo  Ho tro: Windows 7, 8, 8.1, 10. KHONG KHUYEN NGHI su dung Windows Server.
+		echo  Nhan phim bat ky de thoat.
+		pause >nul
+		exit
+	)
 :: /************************************************************************************/
 
 
@@ -534,7 +584,7 @@ goto :EOF
 :main.setGUI
 	title SPI ^| Restart Internet Connection - Fix Internet Connection
 	set optYn= [Y] Accept  [N] Decline
-	set optYnC= [Y] Restart  [T] Additional Tools  [I] Info  [O] Optimize
+	set optYnC= [Y] Restart  [O] Optimize  [T] Additional Tools  [I] Info
 	set optCS= [C] Close  [S] Skip
 	set optOC= [O] Open  [C] Close
 	set autoAcceptMsg= Automatically accept in %autoChoose% second[s].
@@ -557,7 +607,7 @@ goto :EOF
 	if !lang!==1 (
 		title SPI ^| Khởi động lại Kết nối Internet - Sửa Kết nối Internet
 		set optYn= [Y] Đồng ý  [N] Từ chối
-		set optYnC= [Y] Khởi động lại  [T] Công cụ Bổ sung  [I] Thông tin  [O] Tối ưu
+		set optYnC= [Y] Khởi động lại  [O] Tối ưu  [T] Công cụ Bổ sung  [I] Thông tin
 		set optCS= [C] Đóng  [S] Bỏ qua
 		set optOC= [O] Mở  [C] Đóng
 		set autoAcceptMsg= Tự động đồng ý trong %autoChoose% giây.
@@ -1057,6 +1107,7 @@ goto :EOF
 
 
 :: RESTART THE CONNECTION MODULE
+:: /************************************************************************************/
 :progress.restartConnection
 	:: Reset WinSock
 	call :main.showProgress "WinSockReset" 1 2
@@ -1114,7 +1165,9 @@ goto :EOF
 	if !lang!==0 (call :main.showProgress "Internet Connection" 1 1) else (call :main.showProgress "Kết nối Internet" 1 1)
 	if %internetStatus%==0 goto progress.checkLatency2
 	goto progress.waitInternet
-	
+:: /************************************************************************************/
+
+
 :: Run TCP/IP/DNS tweaks.
 :: /************************************************************************************/
 :progress.Opt.TCPIP
@@ -1479,8 +1532,15 @@ goto :EOF
 		reg add "HKEY_LOCAL_MACHINE\defuser\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /V RotatingLockScreenOverlayEnabled /T REG_DWORD /D 00000000 /F >NUL 2>&1
 		reg unload HKEY_LOCAL_MACHINE\defuser >NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f > NUL 2>&1
+		REG add "HKLM\software\microsoft\wcmsvc\wifinetworkmanager" /v "wifisensecredshared" /t REG_DWORD /d "0" /f
+		REG add "HKLM\software\microsoft\wcmsvc\wifinetworkmanager" /v "wifisenseopen" /t REG_DWORD /d "0" /f
+		REG add "HKLM\software\microsoft\windows defender\spynet" /v "spynetreporting" /t REG_DWORD /d "0" /f
+		REG add "HKLM\software\microsoft\windows defender\spynet" /v "submitsamplesconsent" /t REG_DWORD /d "0" /f
+		REG add "HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack" /v "Start" /t REG_DWORD /d "4" /f
+		REG add "HKLM\SYSTEM\CurrentControlSet\Services\dmwappushservice" /v "Start" /t REG_DWORD /d "4" /f
 		
 	call :main.showProgress "Scheduler Tasks Telemetry" 1 4
+		schtasks /delete /F /TN "\Microsoft\Windows\Application Experience\AitAgent"
 		schtasks /delete /F /TN "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser" > NUL 2>&1
 		schtasks /delete /F /TN "\Microsoft\Windows\Application Experience\ProgramDataUpdater" > NUL 2>&1
 		schtasks /delete /F /TN "\Microsoft\Windows\Autochk\Proxy" > NUL 2>&1
@@ -1524,6 +1584,7 @@ goto :EOF
 		
 	call :main.showProgress "Auto-Logger" 1 4
 		if not exist %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\ mkdir %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\ >NUL 2>&1
+		reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\AutoLogger\AutoLogger-Diagtrack-Listener" /v "Start" /t REG_DWORD /d "0" /f
 		echo. > %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl 2>NUL
 		echo y | cacls.exe "%ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl" /d SYSTEM >NUL 2>&1
 	
@@ -1584,6 +1645,7 @@ goto :EOF
 	call :main.showProgress "OneDrive" 1 6
 		taskkill /f /im OneDrive.exe > NUL 2>&1
 		powershell -Command "& {Get-AppxPackage -allusers *OneNote* | Remove-AppxPackage;}"
+		REG add "HKLM\software\policies\microsoft\windows\skydrive" /v "disablefilesync" /t REG_DWORD /d "1" /f
 		if exist %x64% (%x64% /uninstall) else (%x86% /uninstall)
 		reg add "HKCR\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d "0" /f
 		reg add "HKCR\Wow6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d "0" /f
@@ -1604,7 +1666,7 @@ goto :EOF
 			IF !ERRORLEVEL! NEQ 0 echo 0.0.0.0 %%i>>%WINDIR%\System32\drivers\etc\hosts
 		)
 	
-	:: Set the DNS to 1.1.1.1/1.0.0.1, the fastest and best DNS by CloudFlare.
+	:: Set the DNS to 1.1.1.1/1.0.0.1, the best DNS by CloudFlare.
 	call :main.showProgress "DNS" 1 2
 		wmic nicconfig where (IPEnabled=TRUE) call SetDNSServerSearchOrder ("1.1.1.1", "1.0.0.1")
 		
