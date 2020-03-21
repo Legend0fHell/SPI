@@ -7,7 +7,7 @@
 
 * ~~THIS SCRIPT WILL NOT REVERSE CHANGES. Use the script at your OWN RISKS~~ I'm currently working on this feature.
 
-* Latest revision: v4.2.0 @ Feb 22 2020
+* Latest revision: v4.2.1 @ Mar 21 2020
 
 ## Getting Started
 
