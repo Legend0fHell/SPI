@@ -15,9 +15,9 @@
 ::               Services related to Internet connection must be turned on.
 ::
 ::       AUTHOR: Pham Nhat Quang [Legend0fHell]
-::      VERSION: 4.2.1
+::      VERSION: 4.2.2
 ::      CREATED: 06.08.‎2016 - ‏‎15:29:37
-::     REVISION: 21.03.2020
+::     REVISION: 26.04.2020
 ::
 :: =====================================================================================
 ::
@@ -31,13 +31,17 @@
 ::
 ::                                       Changelog
 ::
-::    Version 4.2.1 [21.03.2020]
+::    Version 4.2.2 [26.04.2020]
 ::  * ADD:
-:: - Added a module to check for current Operating System.
-:: - Added some more registry keys in the Blocking Telemetry module.
+:: - More browsers support.
+:: - The ability to change DNS.
+:: - Backup system [WIP].
 ::  * CHANGES:
-:: - General improvement in the code.
+:: - Removed the deletion of IE cache from the reset mode.
+:: - Change the button to skip using SpeedyFox.
+:: - Updated SpeedyFox v2.0.28.
 :: - Fixed localization errors.
+:: - Fixed the 2nd batch tools.
 ::
 :: =====================================================================================
 
@@ -48,9 +52,9 @@
 	CHCP 1258 >nul 2>&1
 	CHCP 65001 >nul 2>&1
 	setlocal EnableExtensions EnableDelayedExpansion
-	set ver=4.2.1
-	set verdate=Mar 21 2019
-	set configLineSkip=56
+	set ver=4.2.2
+	set verdate=Apr 26 2020
+	set configLineSkip=61
 	color 0e
 :: /************************************************************************************/
 
@@ -66,10 +70,13 @@
 	set autoChoose=30
 	set checkPingEnable=1
 	set pingURL=facebook.com
+	set dns1=1.1.1.1
+	set dns2=1.0.0.1
 	set promptUseEnable=1
 	set customHosts=0
 	set operateMode=0
-	set end=12
+	set browsersFound=0
+	set end=11
 :: /************************************************************************************/
 
 
@@ -126,7 +133,6 @@
 	set noPhaseChanged=0
 	set failedPingCheck=0
 	set showInfo=0
-	set browsersFound=0
 goto :EOF
 :: /************************************************************************************/
 
@@ -157,7 +163,7 @@ goto :EOF
 	if %OSAllowed% NEQ 1 (
 		cls
 		set label=Failed&call :main.label 6
-		echo  You MUST use Windows 7 or newer versions in order for the script to work.
+		echo  You MUST use Windows 7 or newer versions so that the script can work properly.
 		echo  Supported System: Windows 7, 8, 8.1, 10. Windows Server is NOT RECOMMENDED.
 		echo  Press any key to exit.
 		echo.
@@ -177,6 +183,7 @@ goto :EOF
 	:: Find the argument "1" when opening the file. This is to check if the script was run by the given shortcut.
 	echo %1 | findstr "1" >nul
 	if %errorlevel%==1 (
+		if %lang%==2 del /f /s config.txt >nul
 		cls
 		set label=Failed&call :main.label 6
 		echo  You MUST run this Script via the given Shortcut in order for it to work.
@@ -261,6 +268,11 @@ goto :EOF
 		echo.
 		echo # Change the URL to Check the Latency. [Default: facebook.com] [Valid URL] [URL/IP]
 		echo pingURL=!pingURL!
+		echo.
+		echo # Change the DNS that the script will use. There are 2 addresses, Primary[1] and Secondary[2] DNS.
+		echo # [Default: 1.1.1.1 / 1.0.0.1 - CloudFlare] [Vaild DNS] [IPv4]
+		echo dns1=!dns1!
+		echo dns2=!dns2!
 		echo.
 		echo # Prompt to use the Script. [Default: 1] [0-Disable / 1-Enable]
 		echo promptUseEnable=!promptUseEnable!
@@ -448,21 +460,19 @@ goto :EOF
 :config.languageSelect
 	cls
 	set label=Select Language&call :main.label 15
-	echo  1/ This script only works in Windows 7 or newer.
-	echo  2/ If something went wrong (the script automatically runs, etc. ),
+	echo  1/ If something went wrong (the script automatically runs, etc. ),
 	echo     close this windows, delete "config.txt" in this folder and run this
 	echo     script via the given Shortcut.
-	echo  3/ Make sure this script's directory DOES NOT CONTAIN any Unicode characters:
+	echo  2/ Make sure this script's directory DOES NOT CONTAIN any Unicode characters:
 	echo     %~dp0
-	echo  4/ Automatically choose English in !autoChoose! second[s].
+	echo  3/ Automatically choose English in !autoChoose! second[s].
 	echo.
 	set label=Chọn Ngôn ngữ&call :main.label 13
-	echo  1/ Công cụ này chỉ hoạt động trên Windows 7 hoặc mới hơn.
-	echo  2/ Nếu xảy ra lỗi (công cụ tự động chạy,...), tắt cửa sổ này, xóa "config.txt"
+	echo  1/ Nếu xảy ra lỗi (công cụ tự động chạy,...), tắt cửa sổ này, xóa "config.txt"
 	echo     trong thư mục này và mở công cụ bằng Lối dẫn (Shortcut) đã cho.
-	echo  3/ Đảm bảo đường dẫn của công cụ KHÔNG CHỨA những ký tự Unicode (chữ Việt,...)
+	echo  2/ Đảm bảo đường dẫn của công cụ KHÔNG CHỨA những ký tự Unicode (chữ Việt,...)
 	echo     %~dp0
-	echo  4/ Tự động chọn Tiếng Anh sau !autoChoose! giây.
+	echo  3/ Tự động chọn Tiếng Anh sau !autoChoose! giây.
 	echo.
 	choice /c ve /n /t !autoChoose! /d e /m " [E] English  [V] Tiếng Việt"
 	set /a lang-=%errorlevel%
@@ -475,7 +485,7 @@ goto :EOF
 :: Check the connection.
 :: /************************************************************************************/
 :main.checkConnection
-	ping -n 1 1.1.1.1 | findstr TTL >nul && set internetStatus=1 || set internetStatus=0
+	ping -n 1 !dns1! | findstr TTL >nul && set internetStatus=1 || set internetStatus=0
 goto :EOF
 :: /************************************************************************************/
 
@@ -494,7 +504,33 @@ goto :EOF
 	FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq chrome.exe"') DO IF %%x == chrome.exe set browsersFound=1
 	FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq firefox.exe"') DO IF %%x == firefox.exe set browsersFound=1
 	FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq opera.exe"') DO IF %%x == opera.exe set browsersFound=1
-	FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq browser.exe"') DO IF %%x == browser.exe set browsersFound=1
+	FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq msedge.exe"') DO IF %%x == msedge.exe set browsersFound=1
+	FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq vivaldi.exe"') DO IF %%x == vivaldi.exe set browsersFound=1
+	FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq thunderbird.exe"') DO IF %%x == thunderbird.exe set browsersFound=1
+goto :EOF
+:: /************************************************************************************/
+
+
+:: Backup files before the script changes anything.
+:: /************************************************************************************/
+:main.backup
+	:: Create Backup Info File.
+	(
+		echo # This is the directory that SPI made to store the backup.
+		echo # Backup created at !time! !date!
+		echo backupCreateTime=!time! !date!
+	) > "backup\backupInfo.txt"
+	
+	:: Backup Hosts file.
+	copy "%WINDIR%\system32\drivers\etc\hosts" "backup\hosts"
+	
+	:: Reading the ipconfig setting
+
+	for /f "tokens=* delims={}" %%i in ('wmic nicconfig get DNSServerSearchOrder ^| findstr "{"') do (
+		set backupDNSOutput=%%i
+		(echo backup_DNS=!backupDNSOutput:}=!) > "backup\backupFile"
+	)
+goto :EOF
 :: /************************************************************************************/
 
 
@@ -585,7 +621,7 @@ goto :EOF
 	title SPI ^| Restart Internet Connection - Fix Internet Connection
 	set optYn= [Y] Accept  [N] Decline
 	set optYnC= [Y] Restart  [O] Optimize  [T] Additional Tools  [I] Info
-	set optCS= [C] Close  [S] Skip
+	set optCS= [Y] Close  [N] Skip
 	set optOC= [O] Open  [C] Close
 	set autoAcceptMsg= Automatically accept in %autoChoose% second[s].
 	set autoDeclineMsg= Automatically decline in %autoChoose% second[s].
@@ -608,7 +644,7 @@ goto :EOF
 		title SPI ^| Khởi động lại Kết nối Internet - Sửa Kết nối Internet
 		set optYn= [Y] Đồng ý  [N] Từ chối
 		set optYnC= [Y] Khởi động lại  [O] Tối ưu  [T] Công cụ Bổ sung  [I] Thông tin
-		set optCS= [C] Đóng  [S] Bỏ qua
+		set optCS= [Y] Đóng  [N] Bỏ qua
 		set optOC= [O] Mở  [C] Đóng
 		set autoAcceptMsg= Tự động đồng ý trong %autoChoose% giây.
 		set autoDeclineMsg= Tự động từ chối trong %autoChoose% giây.
@@ -842,8 +878,8 @@ goto :EOF
 			echo.
 			echo  Vị trí đã được gửi sang trình duyệt mặc định của bạn.
 		)
-		:: Query the IP in traceip.net
-		start www.traceip.net/?query=!IP!
+		:: Query the IP in whatsmyip.com.
+		start www.whatsmyip.com/ip-trace/!IP!
 	) else if !addOpt!==3 (
 		if !lang!==0 (echo  Estimated Time: ~15 seconds.) else (echo  Thời gian dự tính: ~15 giây.)
 		echo.
@@ -1049,6 +1085,25 @@ goto :EOF
 :: Commands to do before running the tweaks.
 :: /************************************************************************************/
 :main.preSetting
+	:: Backup settings before change anything.
+	if not exist backup\ (
+		mkdir backup
+		set counterb=000
+		set counter=0
+		set valuecore=%space%
+		set now=-1
+		if !lang!==0 (
+			call :main.showProgress "Backup" 2 1
+			echo  This is the first run of the script. The script is creating a backup,
+			echo  so that you could revert the changes that the script made.
+		) else (
+			call :main.showProgress "Sao lưu" 2 1
+			echo  Đây là lần đầu tiên công cụ được chạy. Công cụ đang sao lưu cài đặt,
+			echo  để bạn có thể khôi phục lại những cài đặt ban đầu.
+		)
+		echo.
+		call :main.backup
+	)
 	if %operateMode%==1 (
 		set end=72
 		call :main.setVariables
@@ -1070,12 +1125,14 @@ goto :EOF
 		)
 		echo.
 		echo %autoDeclineMsg%
-		choice /c cs /n /t %autoChoose% /d s /m "%optCS%"
+		choice /c yn /n /t %autoChoose% /d n /m "%optCS%"
 			if !errorlevel!==1 (
 				taskkill /f /im chrome.exe
 				taskkill /f /im firefox.exe
 				taskkill /f /im opera.exe
-				taskkill /f /im browser.exe
+				taskkill /f /im msedge.exe
+				taskkill /f /im vivaldi.exe
+				taskkill /f /im thunderbird.exe
 				set browsersFound=0
 			)
 	)
@@ -1130,17 +1187,6 @@ goto :EOF
 	call :main.showProgress "Renew IP" 1 2
 		start "SPI | %percent%%% %now%/%end% - Renew IP [!splitTitle!]" /MIN cmd /c ipconfig /renew"
 	
-	:: Clear Internet Explorer Temporary files. Multi-tasking involved.
-	call :main.showProgress "Internet Explorer Cache" 1 3
-		start "" rundll32.exe InetCpl.cpl,ClearMyTracksByProcess 4351
-		regsvr32 /s actxprxy
-		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
-		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
-		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
-		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
-		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
-		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
-		
 	:: Clear Flash/Macromedia caches.
 	call :main.showProgress "Flash/Macromedia" 1 3
 		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
@@ -1171,7 +1217,7 @@ goto :EOF
 :: Run TCP/IP/DNS tweaks.
 :: /************************************************************************************/
 :progress.Opt.TCPIP
-	:: Delete the ARP Cache
+	:: Delete the ARP Cache.
 	call :main.showProgress "ARP Cache" 1 2
 		netsh interface ip delete arpcache
 		
@@ -1440,7 +1486,7 @@ goto :EOF
 :: /************************************************************************************/
 
 
-:: Run SpeedyFox - a safe browser optimization tool.
+:: Run SpeedyFox - a safe browser optimization tool by CrystalIdea. All rights reserved.
 :: /************************************************************************************/
 :progress.SpeedyFox
 	if !lang!==0 (
@@ -1448,9 +1494,10 @@ goto :EOF
 	) else (
 		call :main.showProgress "Chạy SpeedyFox - Công cụ tối ưu an toàn" 1 3
 	)
-	start "SPI | %percent%%% %now%/%end% - SpeedyFox [!splitTitle!]" /MIN cmd /c ""%~dp0tools\speedyfox.exe" "/Chrome:all" "/Firefox:all" "/Opera:all""
+	start "SPI | %percent%%% %now%/%end% - SpeedyFox [!splitTitle!]" /MIN cmd /c ""%~dp0tools\speedyfox.exe" "/Chrome:all" "/Firefox:all" "/Opera:all" "/Microsoft Edge:all" "/Vivaldi:all" "/Thunderbird:all""
 	:: Deleting Chrome caches.
 	for /d %%b in (%SystemDrive%\Users\*) do del /Q "%%b\AppData\Local\Google\User Data\Default\cache\*"
+	
 goto :EOF
 :: /************************************************************************************/
 
@@ -1478,6 +1525,17 @@ goto :EOF
 	:: Use Large Pages on Chrome to improve performance.
 	call :main.showProgress "Chrome" 1 3
 		reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\chrome.exe" /V UseLargePages /t REG_DWORD /d "00000001" /f > NUL 2>&1
+		
+	:: Clear Internet Explorer Temporary files. Multi-tasking involved.
+	call :main.showProgress "Internet Explorer Cache" 1 3
+		start "" rundll32.exe InetCpl.cpl,ClearMyTracksByProcess 4351
+		regsvr32 /s actxprxy
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
+		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
+		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
 		
 	goto progress.telemetry
 :: /************************************************************************************/
@@ -1666,9 +1724,9 @@ goto :EOF
 			IF !ERRORLEVEL! NEQ 0 echo 0.0.0.0 %%i>>%WINDIR%\System32\drivers\etc\hosts
 		)
 	
-	:: Set the DNS to 1.1.1.1/1.0.0.1, the best DNS by CloudFlare.
+	:: Set the DNS to the DNS set in the config file.
 	call :main.showProgress "DNS" 1 2
-		wmic nicconfig where (IPEnabled=TRUE) call SetDNSServerSearchOrder ("1.1.1.1", "1.0.0.1")
+		wmic nicconfig where (IPEnabled=TRUE) call SetDNSServerSearchOrder ("!dns1!", "!dns2!")
 		
 	:: Waiting for the Internet Connection to estabilshed.
 	if !lang!==0 (call :main.showProgress "Internet Connection" 1 1) else (call :main.showProgress "Kết nối Internet" 1 1)
@@ -1712,8 +1770,7 @@ goto :EOF
 		set pingRate=?
 		goto main.afterSetting
 	)
-	:: Shhhh...
-	if %pingAfter% GEQ %pingBefore% set /a pingAfter=%pingBefore%-1
+	if %pingAfter% GEQ %pingBefore% set /a pingAfter=%pingBefore%
 	set /a pingRate=((%pingBefore%*100)/%pingAfter%)-100
 :: /************************************************************************************/
 
