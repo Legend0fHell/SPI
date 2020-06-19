@@ -15,9 +15,9 @@
 ::               Services related to Internet connection must be turned on.
 ::
 ::       AUTHOR: Pham Nhat Quang [Legend0fHell]
-::      VERSION: 4.2.2
+::      VERSION: 4.3.0
 ::      CREATED: 06.08.‎2016 - ‏‎15:29:37
-::     REVISION: 26.04.2020
+::     REVISION: 19.06.2020
 ::
 :: =====================================================================================
 ::
@@ -31,17 +31,13 @@
 ::
 ::                                       Changelog
 ::
-::    Version 4.2.2 [26.04.2020]
+::    Version 4.3.0 [04.06.2020]
 ::  * ADD:
-:: - More browsers support.
-:: - The ability to change DNS.
-:: - Backup system [WIP].
+:: - Easier way to check the latency.
+:: - Shortcut Generator.
+:: - Proper Icon file.
 ::  * CHANGES:
-:: - Removed the deletion of IE cache from the reset mode.
-:: - Change the button to skip using SpeedyFox.
-:: - Updated SpeedyFox v2.0.28.
-:: - Fixed localization errors.
-:: - Fixed the 2nd batch tools.
+:: - GUI Header.
 ::
 :: =====================================================================================
 
@@ -52,8 +48,8 @@
 	CHCP 1258 >nul 2>&1
 	CHCP 65001 >nul 2>&1
 	setlocal EnableExtensions EnableDelayedExpansion
-	set ver=4.2.2
-	set verdate=Apr 26 2020
+	set ver=4.3.0
+	set verdate=Jun 19 2020
 	set configLineSkip=61
 	color 0e
 :: /************************************************************************************/
@@ -76,7 +72,9 @@
 	set customHosts=0
 	set operateMode=0
 	set browsersFound=0
-	set end=11
+	set connectionStatusLength=0
+	set PingLength=0
+	set end=10
 :: /************************************************************************************/
 
 
@@ -111,9 +109,13 @@
 	title SPI ^| Restart Internet Connection - Fix Internet Connection
 	set "valuecore="
 	set "core="
+	set "linesCore= "
 	for /l %%G in (!width!,-1,1) do (
 		set valuecore=!valuecore! 
 		set core=!core!=
+	)
+	for /l %%G in (!width!,-1,3) do (
+		set linesCore=!linesCore!_
 	)
 	set space=!valuecore!
 	set widthTemp=!width!
@@ -125,14 +127,12 @@
 	set /a between=!width!-8-(!left!*2)
 	set /a endprog=10000/!end!
 	set /a char=!length!/!end!
-	set /a centreTitleEN=(!width!-51)/2
-	set /a centreTitleVI=(!width!-51)/2
-	set /a centreAuthor=(!width!-36)/2
 	set counter=0
 	set counterb=000
 	set noPhaseChanged=0
 	set failedPingCheck=0
 	set showInfo=0
+	set retryTime=0
 goto :EOF
 :: /************************************************************************************/
 
@@ -197,11 +197,13 @@ goto :EOF
 	)
 	:: Checking things.
 	call :main.preloadPS
-	if %lang%==1 (echo  Đang chạy trước PowerShell...) else (echo  Preloading PowerShell...)
-	if %lang%==1 (echo  Đang kiểm tra kết nối mạng...) else (echo  Checking the Internet connection...)
-	call :main.checkConnection
-	if %lang%==1 (echo  Đang kiểm tra trình duyệt...) else (echo  Checking the browsers...)
+	if %lang%==1 (echo  [%time%] Đang chạy trước PowerShell...) else (echo  [%time%] Preloading PowerShell...)
+	if %lang%==1 (echo  [%time%] Đang kiểm tra kết nối mạng...) else (echo  [%time%] Checking the Internet connection...)
+	call :main.checkConnection 1
+	if %lang%==1 (echo  [%time%] Đang kiểm tra trình duyệt...) else (echo  [%time%] Checking the browsers...)
 	call :main.checkBrowsers
+	set connectionStatusLengthBackup=!connectionStatusLength!
+	set failedPingCheckBackup=!failedPingCheck!
 	goto config.detectFirstRun
 :: /************************************************************************************/
 
@@ -463,17 +465,22 @@ goto :EOF
 	echo  1/ If something went wrong (the script automatically runs, etc. ),
 	echo     close this windows, delete "config.txt" in this folder and run this
 	echo     script via the given Shortcut.
-	echo  2/ Make sure this script's directory DOES NOT CONTAIN any Unicode characters:
+	echo  2/ You can create a Shortcut via the option in Additional Tools.
+	echo  3/ Make sure this script's directory DOES NOT CONTAIN any Unicode characters:
 	echo     %~dp0
-	echo  3/ Automatically choose English in !autoChoose! second[s].
+	echo  4/ Automatically choose English in !autoChoose! second[s].
 	echo.
 	set label=Chọn Ngôn ngữ&call :main.label 13
 	echo  1/ Nếu xảy ra lỗi (công cụ tự động chạy,...), tắt cửa sổ này, xóa "config.txt"
 	echo     trong thư mục này và mở công cụ bằng Lối dẫn (Shortcut) đã cho.
-	echo  2/ Đảm bảo đường dẫn của công cụ KHÔNG CHỨA những ký tự Unicode (chữ Việt,...)
+	echo  2/ Bạn có thể tạo Lối dẫn (Shortcut) bằng lựa chọn trong mục Công cụ Bổ sung.
+	echo  3/ Đảm bảo đường dẫn của công cụ KHÔNG CHỨA những ký tự Unicode (chữ Việt,...)
 	echo     %~dp0
-	echo  3/ Tự động chọn Tiếng Anh sau !autoChoose! giây.
-	echo.
+	echo  4/ Tự động chọn Tiếng Anh sau !autoChoose! giây.
+	set /a blankLines=!height!-20
+	call :main.blankLines !blankLines!
+	echo !linesCore!
+	echo  Press the corresponding key of the language. ^| Nhấn phím thích hợp của ngôn ngữ.
 	choice /c ve /n /t !autoChoose! /d e /m " [E] English  [V] Tiếng Việt"
 	set /a lang-=%errorlevel%
 	set existConfig=2
@@ -485,8 +492,60 @@ goto :EOF
 :: Check the connection.
 :: /************************************************************************************/
 :main.checkConnection
-	ping -n 1 !dns1! | findstr TTL >nul && set internetStatus=1 || set internetStatus=0
+	:: Mode 0 = Checking just for connection.
+	:: Mode 1 = Checking the connection and the latency.
+	ping -n 1 !dns1! | findstr TTL >nul && set "internetStatus=1" || set internetStatus=0
+	if %1 == 1 (
+		if %checkPingEnable%==1 (
+			call :progress.checkLatency1
+			if !failedPingCheck! == 1 (
+				if !lang! == 0 (
+					if !internetStatus! == 0 (
+						set connectionStatus=No connection found.
+						set connectionStatusLength=20
+					) else (
+						set connectionStatus=Connection timed out.
+						set connectionStatusLength=21
+					)
+				) else (
+					if !internetStatus! == 0 (
+						set connectionStatus=Không có kết nối.
+						set connectionStatusLength=17
+					) else (
+						set connectionStatus=Quá thời gian kết nối.
+						set connectionStatusLength=22
+					)
+				)
+			) else (
+				set PingBefore2=!PingBefore!
+				call :sub.findPingLength
+				set /a connectionStatusLength=!PingLength!+2
+				set connectionStatus=!PingBefore!ms
+			)
+		) else (
+			if !lang! == 0 (
+				set connectionStatus=Feature disabled.
+				set connectionStatusLength=17
+			) else (
+				set connectionStatus=Tính năng bị vô hiệu hóa.
+				set connectionStatusLength=25
+			)
+		)
+	)
 goto :EOF
+:: /************************************************************************************/
+
+
+:: Find the length of the latency.
+:: /************************************************************************************/
+:sub.findPingLength
+	if !pingBefore2!==0 (
+		goto :EOF
+	) else (
+		set /a PingLength+=1
+		set /a PingBefore2=!PingBefore2!/10
+		goto sub.findPingLength
+	)
 :: /************************************************************************************/
 
 
@@ -528,7 +587,7 @@ goto :EOF
 
 	for /f "tokens=* delims={}" %%i in ('wmic nicconfig get DNSServerSearchOrder ^| findstr "{"') do (
 		set backupDNSOutput=%%i
-		(echo backup_DNS=!backupDNSOutput:}=!) > "backup\backupFile"
+		(echo backup_DNS=!backupDNSOutput:}=!) >> "backup\backupFile"
 	)
 goto :EOF
 :: /************************************************************************************/
@@ -562,6 +621,14 @@ goto :EOF
 :: /************************************************************************************/
 
 
+:: Echo the given blank lines. This is GUI-based.
+:: /************************************************************************************/
+:main.blankLines
+	for /l %%G in (1,1,%1) do echo.
+goto :EOF
+:: /************************************************************************************/
+
+
 :: Print the labels.
 :: /************************************************************************************/
 :main.label
@@ -575,10 +642,9 @@ goto :EOF
 :: /************************************************************************************/
 :main.header
 	cls
-	echo %title%
-	echo %subtitle%
+	echo  %title%
+	echo  %subtitle%
 	echo %core%
-	if %internetStatus%==0 echo  %noInternet%
 goto :EOF
 :: /************************************************************************************/
 
@@ -615,15 +681,33 @@ goto :EOF
 :: /************************************************************************************/
 
 
+:: Set the Internet Status Info on the title of the script.
+:: /************************************************************************************/
+:main.setInternetStatus
+	set /a alignTitle=!width!-2-27-12-!connectionStatusLength!
+	set title=Restart Internet Connection!space:~0,%alignTitle%!Connection: !connectionStatus!
+	set /a alignSubtitle=!width!-36-38
+	set noInternet=Please check your Internet connection.
+	if !lang!==1 (
+		set /a alignTitle=!width!-30-9-!connectionStatusLength!
+		set title=Khởi động lại Kết nối Internet!space:~0,%alignTitle%!Kết nối: !connectionStatus!
+		set /a alignSubtitle=!width!-36-30
+		set noInternet=Hãy kiểm tra kết nối Internet.
+	)
+	if !failedPingCheck!==0 (set subtitle=Legend0fHell - %ver% - %verdate%) else (set subtitle=Legend0fHell - %ver% - %verdate%!space:~0,%alignSubtitle%!!noInternet!)
+goto :EOF
+:: /************************************************************************************/
+
+
 :: Set GUI elements.
 :: /************************************************************************************/
 :main.setGUI
 	title SPI ^| Restart Internet Connection - Fix Internet Connection
 	set optYn= [Y] Accept  [N] Decline
-	set optYnC= [Y] Restart  [O] Optimize  [T] Additional Tools  [I] Info
+	set optYnC= [Y] Restart  [O] Optimize  [T] Additional Tools  [I] Show Info
 	set optCS= [Y] Close  [N] Skip
 	set optOC= [O] Open  [C] Close
-	set autoAcceptMsg= Automatically accept in %autoChoose% second[s].
+	set autoAcceptMsg= Automatically choose Restart in %autoChoose% second[s].
 	set autoDeclineMsg= Automatically decline in %autoChoose% second[s].
 	set splitTitle=Multi-Task
 	set progress[1]=Checks
@@ -636,17 +720,15 @@ goto :EOF
 	set progress[8]=Status
 	set progress[9]=Registry Settings
 	set progress=Progress
+	set guideMsg= Press the corresponding key of the tool.
 	set "titleMoreTool=SPI ^| Additional Tools"
-	set title=!space:~0,%centreTitleEN%!Restart Internet Connection - Fix Internet Connection
-	set subtitle=!space:~0,%centreAuthor%!- Legend0fHell - %ver% - %verdate% -
-	set noInternet=Your Internet connection has some problems. Please check.
 	if !lang!==1 (
 		title SPI ^| Khởi động lại Kết nối Internet - Sửa Kết nối Internet
 		set optYn= [Y] Đồng ý  [N] Từ chối
-		set optYnC= [Y] Khởi động lại  [O] Tối ưu  [T] Công cụ Bổ sung  [I] Thông tin
+		set optYnC= [Y] Khởi động lại  [O] Tối ưu  [T] Công cụ Bổ sung  [I] Hiện Thông tin
 		set optCS= [Y] Đóng  [N] Bỏ qua
 		set optOC= [O] Mở  [C] Đóng
-		set autoAcceptMsg= Tự động đồng ý trong %autoChoose% giây.
+		set autoAcceptMsg= Tự động chọn Khởi động lại trong %autoChoose% giây.
 		set autoDeclineMsg= Tự động từ chối trong %autoChoose% giây.
 		set splitTitle=Tách
 		set progress[1]=Kiểm tra
@@ -660,10 +742,10 @@ goto :EOF
 		set progress[9]=Cài đặt Registry
 		set progress=Tiến trình
 		set "titleMoreTool=SPI ^| Công cụ Bổ sung"
-		set title=!space:~0,%centreTitleVI%!Khởi động lại Kết nối Internet - Sửa Kết nối Internet
-		set subtitle=!space:~0,%centreAuthor%!- Legend0fHell - %ver% - %verdate% -
-		set noInternet=Kết nối Internet của bạn có vấn đề. Hãy kiểm tra.
+		set guideMsg= Nhấn phím thích hợp của công cụ muốn chọn.
 	)
+	call :main.setInternetStatus
+	
 	if %promptUseEnable%==0 (
 		call :main.showProgress "Ready" 2 8
 		goto main.preSetting
@@ -687,6 +769,7 @@ goto :EOF
 		echo  Sử dụng công cụ này sẽ ngắt kết nối Internet của bạn trong thời gian rất ngắn.
 		echo  CÔNG CỤ KHÔNG ĐẢO NGƯỢC NHỮNG THAY ĐỔI. Bạn CHỊU TRÁCH NHIỆM khi dùng công cụ.
 	)
+	set /a blankLines=!height!-16
 	:: Echo this if showInfo is 1.
 	if %showInfo%==1 (
 		echo.
@@ -715,9 +798,11 @@ goto :EOF
 			echo         + Thay đổi cài đặt trong Registry, file Hosts, và các adapter mạng.
 			echo         + Các thiết đặt giảm độ trễ cho rất nhiều game: PUBG, CS:GO, LoL, v.v.
 		)
+		set /a blankLines-=12
 	)
-	echo.
-	echo %autoAcceptMsg%
+	call :main.blankLines !blankLines!
+	echo !linesCore!
+	echo %guideMsg% ^|%autoAcceptMsg%
 	choice /c ytio /n /t %autoChoose% /d y /m "%optYnC%"
 		if %errorlevel%==1 goto main.preSetting
 		if %errorlevel%==2 (
@@ -725,7 +810,21 @@ goto :EOF
 			goto main.moreTools
 		)
 		if %errorlevel%==3 (
-			if %showInfo%==0 (set showInfo=1) else (set showInfo=0)
+			if %showInfo%==0 (
+				set showInfo=1
+				if !lang! == 0 (
+					set optYnC= [Y] Restart  [O] Optimize  [T] Additional Tools  [I] Hide Info
+				) else (
+					set optYnC= [Y] Khởi động lại  [O] Tối ưu  [T] Công cụ Bổ sung  [I] Ẩn Thông tin
+				)
+			) else (
+				set showInfo=0
+				if !lang! == 0 (
+					set optYnC= [Y] Restart  [O] Optimize  [T] Additional Tools  [I] Show Info
+				) else (
+					set optYnC= [Y] Khởi động lại  [O] Tối ưu  [T] Công cụ Bổ sung  [I] Hiện Thông tin
+				)
+			)
 			set noPhaseChanged=1
 			goto main.confirmUse
 		)
@@ -743,9 +842,9 @@ goto :EOF
 	cls
 	call :main.header
 	title %titleMoreTool%
+	set /a blankLines=!height!-34
 	if !lang!==0 (
 		set label=Additional Tools&call :main.label 16
-		echo   Enter the suitable number at the tool you want to use.
 		echo.
 		echo  Additional Batch Tools
 		echo  -----------------------
@@ -767,14 +866,15 @@ goto :EOF
 		echo  -----------------------
 		echo    [11] Chuyển sang Giao diện Tiếng Việt.
 		echo    [12] Reset the Configurations to Default state.
-		echo    [13] Restart the Script.
-		echo    [14] Exit this Page.
-		echo.
+		echo    [13] Generate a Shortcut to the Desktop.
+		echo    [14] Restart the Script.
+		echo    [15] Exit this Page.
 		echo!errorMoreTool!
-		set /p addOpt= [1-14] Selecting Tool: 
+		call :main.blankLines !blankLines!
+		echo !linesCore!
+		echo  Enter the corresponding number of the tool you want to use.
 	) else (
 		set label=Công cụ Bổ sung&call :main.label 15
-		echo   Nhấn số thích hợp ở công cụ bạn muốn sử dụng.
 		echo.
 		echo  Công cụ Batch Bổ sung
 		echo  -----------------------
@@ -796,12 +896,15 @@ goto :EOF
 		echo  -----------------------
 		echo    [11] Switch to English Interface.
 		echo    [12] Khôi phục Cài đặt Gốc.
-		echo    [13] Khởi động lại Công cụ.
-		echo    [14] Thoát khỏi Trang này.
-		echo.
+		echo    [13] Tạo một Lối dẫn tới Desktop.
+		echo    [14] Khởi động lại Công cụ.
+		echo    [15] Thoát khỏi Trang này.
 		echo!errorMoreTool!
-		set /p addOpt= [1-14] Đang chọn Công cụ: 
+		call :main.blankLines !blankLines!
+		echo !linesCore!
+		echo  Nhấn số thích hợp ở công cụ bạn muốn sử dụng.
 	)
+	set /p "addOpt= [1-15]: "
 	cls
 	call :main.header
 	if !lang!==0 (
@@ -888,9 +991,11 @@ goto :EOF
 		for /f "tokens=2 delims=:" %%G in ('netsh wlan show profile') do (
 			for /f "tokens=* delims= " %%H in ("%%G") do (
 				for /f "tokens=2 delims=:" %%a in ('netsh wlan show profile "%%H" key^=clear ^| findstr /C:"Key Content"') do (
-					echo  [SSID] %%G
-					echo     -- [Pass]%%a
-					echo.
+					(
+						echo  [SSID] %%G
+						echo     -- [Pass]%%a
+						echo.
+					) >> output\savedPass.txt
 				)
 			)
 		)
@@ -898,8 +1003,10 @@ goto :EOF
 		call :main.timer
 		if !lang!==0 (
 			echo  Success. [!totalsecs!.!ms! seconds]
+			echo  The results were written to %~dp0output\savedPass.txt.
 		) else (
 			echo  Thành công. [!totalsecs!,!ms! giây]
+			echo  Kết quả đã được nhập vào %~dp0output\savedPass.txt.
 		)
 	) else if !addOpt!==4 (
 		if !lang!==0 (echo  Estimated Time: ~5 seconds.) else (echo  Thời gian dự tính: ~5 giây.)
@@ -1055,9 +1162,21 @@ goto :EOF
 		start tools\SPI_Backup.lnk
 		exit
 	) else if !addOpt!==13 (
+		if !lang!==0 (echo  Estimated Time: ~1 seconds.) else (echo  Thời gian dự tính: ~1 giây.)
+		echo.
+		set timerStart=!time!
+		start SPI_ShortcutGenerator.cmd
+		set timerEnd=!time!
+		call :main.timer
+		if !lang!==0 (
+			echo  Success. [!totalsecs!.!ms! seconds]
+		) else (
+			echo  Thành công. [!totalsecs!,!ms! giây]
+		)
+	) else if !addOpt!==14 (
 		start tools\SPI_Backup.lnk
 		exit
-	) else if !addOpt!==14 (
+	) else if !addOpt!==15 (
 		set noPhaseChanged=1
 		set errorMoreTool=.
 		set "addOpt="
@@ -1105,7 +1224,7 @@ goto :EOF
 		call :main.backup
 	)
 	if %operateMode%==1 (
-		set end=72
+		set end=70
 		call :main.setVariables
 	)
 	if %noPhaseChanged%==1 set noPhaseChanged=0
@@ -1123,7 +1242,9 @@ goto :EOF
 			echo  Công cụ đã phát hiện một số tiến trình trình duyệt đang chạy.
 			echo  Để có thể áp dụng một số tinh chỉnh, bạn phải đóng trình duyệt của bạn.
 		)
-		echo.
+		set /a blankLines=!height!-14
+		call :main.blankLines !blankLines!
+		echo !linesCore!
 		echo %autoDeclineMsg%
 		choice /c yn /n /t %autoChoose% /d n /m "%optCS%"
 			if !errorlevel!==1 (
@@ -1136,30 +1257,45 @@ goto :EOF
 				set browsersFound=0
 			)
 	)
+	if !lang!==0 (
+		set /a alignTitle2=!width!-2-27-12
+	) else (
+		set /a alignTitle2=!width!-30-9-9
+	)
+	if !lang!==0 (
+		set title=Restart Internet Connection!space:~0,%alignTitle2%!Executing...
+	) else (
+		set title=Khởi động lại Kết nối Internet!space:~0,%alignTitle2%!Đang thực thi...
+	)
+	set subtitle=Legend0fHell - %ver% - %verdate%
 	set counterb=000
 	set counter=0
 	set valuecore=%space%
 	set timerStart=%time%
+	set now=0
+	goto progress.restartConnection
 :: /************************************************************************************/
 
 
 :: Check the latency if the option is enabled.
 :: /************************************************************************************/
 :progress.checkLatency1
-	set now=0
-	if !lang!==0 (call :main.showProgress "Checking the Latency" 1 1) else (call :main.showProgress "Kiểm tra Độ trễ" 1 1)
-	if %checkPingEnable%==0 goto progress.restartConnection
 	:: Prevent the command from errors.
 	if %internetStatus%==0 (
 		set failedPingCheck=1
-		goto progress.restartConnection
+		goto :EOF
 	)
 	for /F "delims=" %%a in ('ping "%pingURL%" -n 2 ^| findstr TTL') do (
 	   set line=%%a
 	   for /F "tokens=7 delims== " %%b in ("%%a") do set pingBefore=%%b
 	)
-	if not defined pingBefore set failedPingCheck=1
-	set pingBefore=%pingBefore:~0,-2%
+	if not defined pingBefore (
+		set failedPingCheck=1
+	) else (
+		set failedPingCheck=0
+		set pingBefore=%pingBefore:~0,-2%
+	)
+goto :EOF
 :: /************************************************************************************/
 
 
@@ -1186,12 +1322,12 @@ goto :EOF
 	:: Renew the IP. Multi-tasking this progress because this takes a lot of time.
 	call :main.showProgress "Renew IP" 1 2
 		start "SPI | %percent%%% %now%/%end% - Renew IP [!splitTitle!]" /MIN cmd /c ipconfig /renew"
-	
+		
 	:: Clear Flash/Macromedia caches.
 	call :main.showProgress "Flash/Macromedia" 1 3
 		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
 		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Roaming\Macromedia\Flashp~1" >nul
-		
+	
 	:: Check the existance of SpeedyFox in tools\. If not found the file or browsers are running, SpeedyFox task will be skipped.
 	if not exist "%~dp0tools\speedyfox.exe" (
 		call :main.showProgress "Not found SpeedyFox. Skipping..." 1 8
@@ -1209,7 +1345,6 @@ goto :EOF
 	
 	:: Waiting for the Internet Connection to estabilshed.
 	if !lang!==0 (call :main.showProgress "Internet Connection" 1 1) else (call :main.showProgress "Kết nối Internet" 1 1)
-	if %internetStatus%==0 goto progress.checkLatency2
 	goto progress.waitInternet
 :: /************************************************************************************/
 
@@ -1348,7 +1483,7 @@ goto :EOF
 		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v LargeSystemCache /t REG_DWORD /d "0" /f > NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" /v Size /t REG_DWORD /d "3" /f > NUL 2>&1
 		
-	:: Set Network Throttling Index to 4294967295 [2*2^31-1].
+	:: Set Network Throttling Index to 4294967295 [2^32-1].
 	call :main.showProgress "Network Throttling Index" 1 2
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d "4294967295" /f > NUL 2>&1
 		
@@ -1486,7 +1621,7 @@ goto :EOF
 :: /************************************************************************************/
 
 
-:: Run SpeedyFox - a safe browser optimization tool by CrystalIdea. All rights reserved.
+:: Run SpeedyFox - a safe browser optimization tool by CrystalIdea.
 :: /************************************************************************************/
 :progress.SpeedyFox
 	if !lang!==0 (
@@ -1506,7 +1641,7 @@ goto :EOF
 :: /************************************************************************************/
 :progress.browsers
 	:: Tweaking Internet Explorer options [Someone in the world is still using this].
-	call :main.showProgress "Internet Explorer Tweaks" 1 3
+	call :main.showProgress "Internet Explorer" 1 3
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER" /v explorer.exe /t REG_DWORD /d "8" /f > NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPERSERVER" /v explorer.exe /t REG_DWORD /d "8" /f > NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_MAXCONNECTIONSPER1_0SERVER" /v iexplore.exe /t REG_DWORD /d "8" /f > NUL 2>&1
@@ -1521,13 +1656,6 @@ goto :EOF
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext" /V NoFirsttimeprompt /t REG_DWORD /d "1" /f > NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V DisableInPrivateBlocking /t REG_DWORD /d "00000000" /f > NUL 2>&1
 		reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer\Safety\PrivacIE" /V StartMode /t REG_DWORD /d "00000001" /f > NUL 2>&1
-	
-	:: Use Large Pages on Chrome to improve performance.
-	call :main.showProgress "Chrome" 1 3
-		reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\chrome.exe" /V UseLargePages /t REG_DWORD /d "00000001" /f > NUL 2>&1
-		
-	:: Clear Internet Explorer Temporary files. Multi-tasking involved.
-	call :main.showProgress "Internet Explorer Cache" 1 3
 		start "" rundll32.exe InetCpl.cpl,ClearMyTracksByProcess 4351
 		regsvr32 /s actxprxy
 		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Intern~1" >nul
@@ -1536,6 +1664,11 @@ goto :EOF
 		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\History" >nul
 		del /q /s /f "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
 		rd /s /q "%HomeDrive%\Users\%USERNAME%\AppData\Local\Microsoft\Windows\Tempor~1" >nul
+		
+	
+	:: Use Large Pages on Chrome to improve performance.
+	call :main.showProgress "Chrome" 1 3
+		reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\chrome.exe" /V UseLargePages /t REG_DWORD /d "00000001" /f > NUL 2>&1
 		
 	goto progress.telemetry
 :: /************************************************************************************/
@@ -1737,8 +1870,17 @@ goto :EOF
 :: Wait until the Internet connection is estabilshed.
 :: /************************************************************************************/
 :progress.waitInternet
-	call :main.checkConnection
-	IF %internetStatus%==0 goto progress.waitInternet
+	call :main.checkConnection 0
+	set /a retryTime+=1
+	if !internetStatus! == 0 (
+		if !retryTime! LSS 1000 (
+			goto progress.waitInternet
+		) else (
+			goto progress.checkLatency2
+		)
+	) else (
+		goto progress.checkLatency2
+	)
 :: /************************************************************************************/
 
 
@@ -1746,16 +1888,11 @@ goto :EOF
 :: /************************************************************************************/
 :progress.checkLatency2
 	if !lang!==0 (call :main.showProgress "Checking the Current Latency" 1 1) else (call :main.showProgress "Kiểm tra Độ trễ Hiện tại" 1 1)
-	if %checkPingEnable%==0 goto main.afterSetting
-	:: Prevent the command from errors.
-	if %internetStatus%==0 set failedPingCheck=1
-	if %failedPingCheck%==1 goto main.checkResults
-	for /F "delims=" %%a in ('ping "%pingURL%" -n 2 ^| findstr TTL') do (
-	   set line=%%a
-	   for /F "tokens=7 delims== " %%b in ("%%a") do set pingAfter=%%b
-	)
-	if not defined pingAfter set failedPingCheck=1
-	set pingAfter=%pingAfter:~0,-2%
+	set pingBeforeBackup=!pingBefore!
+	call :main.checkConnection 1
+	set pingAfter=!pingBefore!
+	set pingBefore=!pingBeforeBackup!
+	if !checkPingEnable!==0 goto main.afterSetting
 :: /************************************************************************************/
 
 
@@ -1764,13 +1901,35 @@ goto :EOF
 :: /************************************************************************************/
 :main.checkResults
 	:: Set the result to "?" if the commands got some errors.
-	if %failedPingCheck%==1 (
-		set pingBefore=?
-		set pingAfter=?
-		set pingRate=?
+	if !failedPingCheckBackup!==1 (
+		if !failedPingCheck!==1 (
+			set pingBefore=?
+			set pingAfter=?
+			set pingRate=?
+			goto main.afterSetting
+		) else (
+			set pingBefore=?
+			set pingRate=?
+			goto main.afterSetting
+		)
+	)
+	if !failedPingCheckBackup!==0 (
+		if !failedPingCheck!==0 (
+			if %pingAfter% GEQ %pingBefore% (
+				set pingAfter=%pingBefore%
+				set connectionStatus=!pingBefore!ms
+				set connectionStatusLength=!connectionStatusLengthBackup!
+			) else (
+				set /a connectionStatusLength-=2
+			)
+		) else (
+			set pingAfter=?
+			set pingRate=?
+			goto main.afterSetting
+		)
+	) else (
 		goto main.afterSetting
 	)
-	if %pingAfter% GEQ %pingBefore% set /a pingAfter=%pingBefore%
 	set /a pingRate=((%pingBefore%*100)/%pingAfter%)-100
 :: /************************************************************************************/
 
@@ -1778,6 +1937,7 @@ goto :EOF
 :: Commands to do after running the tweaks.
 :: /************************************************************************************/
 :main.afterSetting
+	call :main.setInternetStatus
 	set /a now-=1
 	set timerEnd=%time%
 	call :main.timer
@@ -1790,7 +1950,7 @@ goto :EOF
 :main.finish
 	if !lang!==0 (
 		call :main.showProgress "Completed" 1 8
-		echo  Your connection has been improved successfully. [%totalsecs%.%ms% seconds]
+		echo  The script was executed. [%totalsecs%.%ms% seconds]
 		echo.
 		set label=Advice&call :main.label 6
 		echo  1/ Restart your PC to fully applied the tweaks.
@@ -1798,7 +1958,7 @@ goto :EOF
 		echo  3/ Running this script frequently.
 	) else (
 		call :main.showProgress "Hoàn thành" 1 8
-		echo  Kết nối của bạn đã được tăng tốc thành công. [%totalsecs%,%ms% giây]
+		echo  Công cụ đã được thực thi. [%totalsecs%,%ms% giây]
 		echo.
 		set label=Lời khuyên&call :main.label 10
 		echo  1/ Khởi động lại máy tính để các tinh chỉnh có đầy đủ hiệu lực.
